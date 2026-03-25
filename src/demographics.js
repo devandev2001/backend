@@ -38,25 +38,36 @@ const CASTES = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
 export function getCasteLabel(ac, casteWeight) {
   const acData = AC_DEMOGRAPHICS[ac];
   if (!acData) return "Others";
-  const w = Math.round(parseFloat(casteWeight) * 10000);
+  const w = parseFloat(casteWeight);
+  if (!w) return "Others";
+  let bestLabel = "Others";
+  let bestDiff = Infinity;
   for (const c of CASTES) {
-    if (Math.round((acData[c] || 0) * 100) === w) return c;
+    const diff = Math.abs((acData[c] || 0) / 100 - w);
+    if (diff < bestDiff) { bestDiff = diff; bestLabel = c; }
   }
-  return "Others";
+  return bestLabel;
 }
 
 export function getGenderLabel(ac, genderWeight) {
   const acData = AC_DEMOGRAPHICS[ac];
   if (!acData) return "Male";
-  const maleW = Math.round(acData.male * 100);
-  const entryW = Math.round(parseFloat(genderWeight) * 10000);
-  return entryW === maleW ? "Male" : "Female";
+  const w = parseFloat(genderWeight);
+  const maleW = acData.male / 100;
+  const femaleW = acData.female / 100;
+  return Math.abs(maleW - w) <= Math.abs(femaleW - w) ? "Male" : "Female";
 }
 
 export function getAgeLabel(ageWeight) {
   const w = parseFloat(ageWeight);
+  if (!w) return "Unknown";
+  // Find closest match — sheet storage may round last few decimals
+  let bestLabel = "Unknown";
+  let bestDiff = Infinity;
   for (const [label, val] of Object.entries(AGE_WEIGHTS)) {
-    if (Math.abs(val - w) < 0.000001) return label;
+    const diff = Math.abs(val - w);
+    if (diff < bestDiff) { bestDiff = diff; bestLabel = label; }
   }
-  return "Unknown";
+  // Accept if within 0.001 (smallest gap between age weights is ~0.015)
+  return bestDiff < 0.001 ? bestLabel : "Unknown";
 }
