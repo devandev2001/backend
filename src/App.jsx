@@ -2,6 +2,7 @@ import { useState } from "react";
 import QuickStats from "./components/QuickStats";
 import EntryTracker from "./components/EntryTracker";
 import SummaryView from "./components/SummaryView";
+import Analytics from "./components/Analytics";
 import { useEntries } from "./useSheetData";
 import { toTabName, toEntryDate } from "./config";
 import "./App.css";
@@ -67,6 +68,12 @@ export default function App() {
         >
           📊 Summary & Download
         </button>
+        <button
+          className={`nav-tab ${tab === "analytics" ? "active" : ""}`}
+          onClick={() => setTab("analytics")}
+        >
+          📈 Analytics
+        </button>
       </nav>
 
       {/* Quick stats */}
@@ -89,6 +96,12 @@ export default function App() {
             tabName={summaryTabName}
             loading={entriesLoading}
             entries={entries}
+          />
+        )}
+        {tab === "analytics" && (
+          <Analytics
+            entries={entries}
+            loading={entriesLoading}
           />
         )}
       </main>
