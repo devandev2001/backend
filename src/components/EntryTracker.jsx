@@ -29,21 +29,21 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
     });
   }, [entries, filterAC, filterFA, filterParty]);
 
-  // All FA counts (from ALL entries, not filtered)
+  // FA counts from FILTERED entries
   const allFACounts = useMemo(() => {
-    if (!entries) return [];
+    if (!filtered) return [];
     const counts = {};
-    entries.forEach(e => { counts[e.faName] = (counts[e.faName] || 0) + 1; });
+    filtered.forEach(e => { counts[e.faName] = (counts[e.faName] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [entries]);
+  }, [filtered]);
 
-  // Per-AC counts from all entries
+  // AC counts from FILTERED entries
   const allACCounts = useMemo(() => {
-    if (!entries) return [];
+    if (!filtered) return [];
     const counts = {};
-    entries.forEach(e => { counts[e.ac] = (counts[e.ac] || 0) + 1; });
+    filtered.forEach(e => { counts[e.ac] = (counts[e.ac] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [entries]);
+  }, [filtered]);
 
   return (
     <div className="tracker-wrap">
