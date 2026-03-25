@@ -53,14 +53,14 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
         </button>
       </div>
 
-      {error && <div className="error-banner">⚠ {error}</div>}
-
       {loading ? (
         <div className="loading-msg">Fetching summary…</div>
+      ) : error && !data ? (
+        <div className="error-banner">⚠ {error}</div>
       ) : !data?.found ? (
         <div className="info-banner">
-          No summary tab found for <strong>{tabName}</strong>. The report is auto-generated at 8 PM.
-          <br />You can run <code>generateDailyReport()</code> manually in Apps Script to generate it now.
+          No summary tab found for <strong>{tabName}</strong>. The report is auto-generated at 8 PM IST.
+          <br /><br />To generate it now: open <strong>Apps Script → select <code>generateDailyReport</code> → ▶ Run</strong>
         </div>
       ) : data.rows.length === 0 ? (
         <div className="info-banner">Summary tab exists but has no data.</div>

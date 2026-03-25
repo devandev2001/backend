@@ -6,10 +6,18 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
   const [filterFA, setFilterFA] = useState("");
   const [filterParty, setFilterParty] = useState("");
 
+  // FA names filtered by selected AC
   const faNames = useMemo(() => {
     if (!entries) return [];
-    return [...new Set(entries.map(e => e.faName))].sort();
-  }, [entries]);
+    const source = filterAC ? entries.filter(e => e.ac === filterAC) : entries;
+    return [...new Set(source.map(e => e.faName))].filter(Boolean).sort();
+  }, [entries, filterAC]);
+
+  // Reset FA filter when AC changes
+  function handleACChange(val) {
+    setFilterAC(val);
+    setFilterFA(""); // reset FA when AC changes
+  }
 
   const filtered = useMemo(() => {
     if (!entries) return [];
@@ -21,25 +29,27 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
     });
   }, [entries, filterAC, filterFA, filterParty]);
 
-  // Per-FA counts from filtered
-  const faCounts = useMemo(() => {
+  // All FA counts (from ALL entries, not filtered)
+  const allFACounts = useMemo(() => {
+    if (!entries) return [];
     const counts = {};
-    filtered.forEach(e => { counts[e.faName] = (counts[e.faName] || 0) + 1; });
+    entries.forEach(e => { counts[e.faName] = (counts[e.faName] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [filtered]);
+  }, [entries]);
 
-  // Per-AC counts from filtered
-  const acCounts = useMemo(() => {
+  // Per-AC counts from all entries
+  const allACCounts = useMemo(() => {
+    if (!entries) return [];
     const counts = {};
-    filtered.forEach(e => { counts[e.ac] = (counts[e.ac] || 0) + 1; });
+    entries.forEach(e => { counts[e.ac] = (counts[e.ac] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [filtered]);
+  }, [entries]);
 
   return (
     <div className="tracker-wrap">
       {/* Filters */}
       <div className="filter-bar">
-        <select value={filterAC} onChange={e => setFilterAC(e.target.value)}>
+        <select value={filterAC} onChange={e => handleACChange(e.target.value)}>
           <option value="">All Constituencies</option>
           {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
         </select>
@@ -58,31 +68,79 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
 
       {error && <div className="error-banner">⚠ {error}</div>}
 
-      {/* Mini summaries */}
+      {/* FA Summary Table — always visible */}
+      <div className="fa-table-section">
+        <div className="section-label">FA Entry Summary</div>
+        <div className="table-wrap">
+          <table className="fa-summary-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>FA Name</th>
+                <th>Entries</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allFACounts.map(([fa, cnt], i) => (
+                <tr key={fa} className={i % 2 === 0 ? "row-even" : "row-odd"}>
+                  <td className="num-col">{i + 1}</td>
+                  <td style={{ fontWeight: 600 }}>{fa}</td>
+                  <td className="num-col" style={{ color: "#1d4ed8", fontWeight: 700 }}>{cnt}</td>
+                  <td>
+                    <div className="progress-bar-track">
+                      <div
+                        className="progress-bar-fill"
+                        style={{ width: `${Math.min((cnt / (allFACounts[0]?.[1] || 1)) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* AC Summary mini cards */}
       <div className="mini-summary-row">
         <div className="mini-card">
-          <div className="mini-title">Entries by FA</div>
-          {faCounts.slice(0, 8).map(([fa, cnt]) => (
-            <div key={fa} className="mini-row">
-              <span className="mini-name">{fa}</span>
-              <span className="mini-count">{cnt}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mini-card">
           <div className="mini-title">Entries by AC</div>
-          {acCounts.slice(0, 8).map(([ac, cnt]) => (
+          {allACCounts.map(([ac, cnt]) => (
             <div key={ac} className="mini-row">
               <span className="mini-name">{ac}</span>
               <span className="mini-count">{cnt}</span>
             </div>
           ))}
         </div>
+        <div className="mini-card">
+          <div className="mini-title">Filtered Results</div>
+          <div style={{ padding: "8px 0", fontSize: 13, color: "#64748b" }}>
+            {filterAC || filterFA || filterParty ? (
+              <>
+                <div style={{ marginBottom: 6 }}>
+                  {filterAC && <span className="filter-chip">{filterAC}</span>}
+                  {filterFA && <span className="filter-chip">{filterFA}</span>}
+                  {filterParty && <span className="filter-chip">{filterParty}</span>}
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1e3a8a" }}>{filtered.length}</div>
+                <div style={{ fontSize: 12 }}>matching entries</div>
+              </>
+            ) : (
+              <div style={{ color: "#94a3b8", fontStyle: "italic" }}>No filters applied</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Entry count */}
       <div className="entry-count">
         Showing <strong>{filtered.length}</strong> of <strong>{entries?.length || 0}</strong> entries
+        {(filterAC || filterFA || filterParty) && (
+          <button className="clear-filters-btn" onClick={() => { setFilterAC(""); setFilterFA(""); setFilterParty(""); }}>
+            ✕ Clear filters
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -109,14 +167,14 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={12} className="no-data">No entries found</td></tr>
+                <tr><td colSpan={12} className="no-data">No entries found for selected filters</td></tr>
               ) : (
                 filtered.map((e, i) => (
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     <td className="num-col">{i + 1}</td>
                     <td className="time-col">{String(e.timestamp).split(",")[1]?.trim() || e.timestamp}</td>
                     <td className="ac-col">{e.ac}</td>
-                    <td>{e.faName}</td>
+                    <td style={{ fontWeight: 500 }}>{e.faName}</td>
                     <td className="num-col">{parseFloat(e.casteWeight).toFixed(4)}</td>
                     <td className="num-col">{parseFloat(e.genderWeight).toFixed(4)}</td>
                     <td className="num-col">{parseFloat(e.ageWeight).toFixed(4)}</td>

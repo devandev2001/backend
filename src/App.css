@@ -164,6 +164,18 @@ body {
 .bar-seg-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.95); padding: 0 6px; white-space: nowrap; overflow: hidden; }
 .bar-winner { width: 80px; font-size: 12px; font-weight: 800; flex-shrink: 0; }
 
+/* ── FA Summary Table ── */
+.fa-table-section { margin-bottom: 14px; }
+.section-label { font-size: 12px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.fa-summary-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+.fa-summary-table th { background: #1d4ed8; color: #fff; padding: 9px 12px; font-weight: 700; text-align: left; font-size: 12px; }
+.fa-summary-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.progress-bar-track { width: 120px; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, #0ea5e9); border-radius: 4px; transition: width 0.4s ease; }
+.filter-chip { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-right: 4px; }
+.clear-filters-btn { margin-left: 10px; background: none; border: none; color: #dc2626; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; font-family: inherit; }
+.clear-filters-btn:hover { text-decoration: underline; }
+
 /* ── Messages ── */
 .loading-msg { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
 .error-banner { background: #fee2e2; color: #dc2626; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
