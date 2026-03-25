@@ -70,15 +70,15 @@ function useAnalyticsData(entries) {
 
     const total = entries.length;
 
-    const caste = Object.entries(casteMap).map(([name, count]) => ({
-      name, count, value: pct(count, total),
-    }));
+    const caste = Object.entries(casteMap)
+      .filter(([name]) => name !== "Unknown")
+      .map(([name, count]) => ({ name, count, value: pct(count, total) }));
 
-    const gender = Object.entries(genderMap).map(([name, count]) => ({
-      name, count, value: pct(count, total),
-    }));
+    const gender = Object.entries(genderMap)
+      .filter(([name]) => name !== "Unknown")
+      .map(([name, count]) => ({ name, count, value: pct(count, total) }));
 
-    const AGE_ORDER = ["18-19","20-29","30-39","40-49","50-59","60-69","70-79","80+","Unknown"];
+    const AGE_ORDER = ["18-19","20-29","30-39","40-49","50-59","60-69","70-79","80+"];
     const age = AGE_ORDER.filter(k => ageMap[k]).map(k => ({
       name: k, count: ageMap[k], value: pct(ageMap[k], total),
     }));
