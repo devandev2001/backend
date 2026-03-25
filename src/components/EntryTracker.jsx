@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
 import { ACS, PARTIES } from "../config";
 
+const DEFAULT_LIMIT = 100;
+
 export default function EntryTracker({ entries, loading, error, onRefresh }) {
   const [filterAC, setFilterAC] = useState("");
   const [filterFA, setFilterFA] = useState("");
   const [filterParty, setFilterParty] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   // FA names filtered by selected AC
   const faNames = useMemo(() => {
@@ -49,19 +52,28 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
     <div className="tracker-wrap">
       {/* Filters */}
       <div className="filter-bar">
-        <select value={filterAC} onChange={e => handleACChange(e.target.value)}>
-          <option value="">All Constituencies</option>
-          {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
-        </select>
-        <select value={filterFA} onChange={e => setFilterFA(e.target.value)}>
-          <option value="">All FA Names</option>
-          {faNames.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-        <select value={filterParty} onChange={e => setFilterParty(e.target.value)}>
-          <option value="">All Parties (Who Will Win)</option>
-          {PARTIES.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <button className="refresh-btn" onClick={onRefresh} disabled={loading}>
+        <div className="filter-group">
+          <label className="filter-label">Assembly Constituency</label>
+          <select className="filter-select" value={filterAC} onChange={e => handleACChange(e.target.value)}>
+            <option value="">All Constituencies</option>
+            {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Field Assistant</label>
+          <select className="filter-select" value={filterFA} onChange={e => setFilterFA(e.target.value)}>
+            <option value="">All FAs</option>
+            {faNames.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Who Will Win</label>
+          <select className="filter-select" value={filterParty} onChange={e => setFilterParty(e.target.value)}>
+            <option value="">All Parties</option>
+            {PARTIES.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <button className="refresh-btn" onClick={onRefresh} disabled={loading} style={{ alignSelf: "flex-end" }}>
           {loading ? "Loading…" : "↻ Refresh"}
         </button>
       </div>
@@ -133,12 +145,21 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
         </div>
       </div>
 
-      {/* Entry count */}
-      <div className="entry-count">
-        Showing <strong>{filtered.length}</strong> of <strong>{entries?.length || 0}</strong> entries
-        {(filterAC || filterFA || filterParty) && (
-          <button className="clear-filters-btn" onClick={() => { setFilterAC(""); setFilterFA(""); setFilterParty(""); }}>
-            ✕ Clear filters
+      {/* Entry count + show-all toggle */}
+      <div className="entry-count-row">
+        <span className="entry-count">
+          Showing <strong>{Math.min(showAll ? filtered.length : DEFAULT_LIMIT, filtered.length)}</strong>
+          {" of "}
+          <strong>{filtered.length}</strong> entries
+          {(filterAC || filterFA || filterParty) && (
+            <button className="clear-filters-btn" onClick={() => { setFilterAC(""); setFilterFA(""); setFilterParty(""); setShowAll(false); }}>
+              ✕ Clear
+            </button>
+          )}
+        </span>
+        {filtered.length > DEFAULT_LIMIT && (
+          <button className="show-all-btn" onClick={() => setShowAll(v => !v)}>
+            {showAll ? `Show first ${DEFAULT_LIMIT}` : `Show all ${filtered.length} ↓`}
           </button>
         )}
       </div>
@@ -169,7 +190,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={12} className="no-data">No entries found for selected filters</td></tr>
               ) : (
-                filtered.map((e, i) => (
+                (showAll ? filtered : filtered.slice(0, DEFAULT_LIMIT)).map((e, i) => (
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     <td className="num-col">{i + 1}</td>
                     <td className="time-col">{String(e.timestamp).split(",")[1]?.trim() || e.timestamp}</td>
@@ -188,6 +209,14 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
               )}
             </tbody>
           </table>
+          {/* Show-all footer inside table */}
+          {!showAll && filtered.length > DEFAULT_LIMIT && (
+            <div className="table-show-more">
+              <button className="show-all-btn" onClick={() => setShowAll(true)}>
+                Show all {filtered.length} entries ↓
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

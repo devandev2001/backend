@@ -220,19 +220,26 @@ export default function Analytics({ entries, loading }) {
       </div>
 
       {/* Filters */}
-      <div className="analytics-filters">
-        <select className="filter-select" value={filterAC}
-          onChange={e => { setFilterAC(e.target.value); setFilterFA(""); }}>
-          <option value="">All ACs</option>
-          {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
-        </select>
-        <select className="filter-select" value={filterFA}
-          onChange={e => setFilterFA(e.target.value)}>
-          <option value="">All FAs</option>
-          {faNames.map(fa => <option key={fa} value={fa}>{fa}</option>)}
-        </select>
+      <div className="filter-bar" style={{ marginBottom: 20 }}>
+        <div className="filter-group">
+          <label className="filter-label">Assembly Constituency</label>
+          <select className="filter-select" value={filterAC}
+            onChange={e => { setFilterAC(e.target.value); setFilterFA(""); }}>
+            <option value="">All ACs</option>
+            {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Field Assistant</label>
+          <select className="filter-select" value={filterFA}
+            onChange={e => setFilterFA(e.target.value)}>
+            <option value="">All FAs</option>
+            {faNames.map(fa => <option key={fa} value={fa}>{fa}</option>)}
+          </select>
+        </div>
         {(filterAC || filterFA) && (
-          <button className="clear-btn" onClick={() => { setFilterAC(""); setFilterFA(""); }}>
+          <button className="clear-btn" style={{ alignSelf: "flex-end" }}
+            onClick={() => { setFilterAC(""); setFilterFA(""); }}>
             ✕ Clear
           </button>
         )}
