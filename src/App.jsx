@@ -2,8 +2,8 @@ import { useState } from "react";
 import QuickStats from "./components/QuickStats";
 import EntryTracker from "./components/EntryTracker";
 import SummaryView from "./components/SummaryView";
-import { useEntries, useSummary, useDates } from "./useSheetData";
-import { todayStr, toTabName, toEntryDate } from "./config";
+import { useEntries } from "./useSheetData";
+import { toTabName, toEntryDate } from "./config";
 import "./App.css";
 
 export default function App() {
@@ -19,8 +19,6 @@ export default function App() {
   const summaryTabName = toTabName(new Date(selectedDate + "T00:00:00"));
 
   const { data: entriesData, loading: entriesLoading, error: entriesError, refresh: refreshEntries } = useEntries(entryDateStr);
-  const { data: summaryData, loading: summaryLoading, error: summaryError } = useSummary(summaryTabName);
-  const { dates } = useDates();
 
   const entries = entriesData?.entries || [];
 
@@ -88,10 +86,8 @@ export default function App() {
         )}
         {tab === "summary" && (
           <SummaryView
-            data={summaryData}
             tabName={summaryTabName}
-            loading={summaryLoading}
-            error={summaryError}
+            loading={entriesLoading}
             entries={entries}
           />
         )}

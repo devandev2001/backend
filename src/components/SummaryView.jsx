@@ -1,20 +1,72 @@
+import { useMemo } from "react";
 import * as XLSX from "xlsx";
 
-export default function SummaryView({ data, tabName, loading, error, entries }) {
-  const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
+const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
+const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
+
+// Calculate summary rows from raw entries (client-side, no 8PM needed)
+function calcSummary(entries) {
+  if (!entries || entries.length === 0) return [];
+
+  const acMap = {};
+  entries.forEach(e => {
+    const ac = String(e.ac).trim();
+    const party = String(e.whoWillWin).trim();
+    const score = parseFloat(e.normalizedScore) || 0;
+    if (!acMap[ac]) {
+      acMap[ac] = {};
+      PARTIES.forEach(p => { acMap[ac][p] = { sum: 0, count: 0 }; });
+    }
+    if (acMap[ac][party]) {
+      acMap[ac][party].sum += score;
+      acMap[ac][party].count += 1;
+    }
+  });
+
+  return Object.keys(acMap).sort().map(ac => {
+    const partyData = acMap[ac];
+    let totalEntries = 0;
+    let grandTotal = 0;
+    const partySums = {};
+
+    PARTIES.forEach(p => {
+      totalEntries += partyData[p].count;
+      partySums[p] = partyData[p].sum;
+      grandTotal += partyData[p].sum;
+    });
+
+    const pct = {};
+    let winner = "-";
+    let maxPct = -1;
+
+    PARTIES.forEach(p => {
+      pct[p] = grandTotal > 0 ? (partySums[p] / grandTotal) * 100 : 0;
+      if (pct[p] > maxPct) { maxPct = pct[p]; winner = p; }
+    });
+
+    return {
+      ac,
+      totalEntries,
+      ldf:    pct["LDF"].toFixed(2) + "%",
+      udf:    pct["UDF"].toFixed(2) + "%",
+      bjp:    pct["BJP/NDA"].toFixed(2) + "%",
+      others: pct["Others"].toFixed(2) + "%",
+      winner,
+    };
+  });
+}
+
+export default function SummaryView({ tabName, loading, entries }) {
+  const rows = useMemo(() => calcSummary(entries), [entries]);
 
   function downloadExcel() {
     const wb = XLSX.utils.book_new();
 
     // Sheet 1 — Summary
     const summaryHeaders = [["Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
-    const summaryRows = (data?.rows || []).map(r => [
-      r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner
-    ]);
+    const summaryRows = rows.map(r => [r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
     const ws1 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRows]);
-
-    // Style column widths
-    ws1["!cols"] = [{ wch: 22 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 18 }];
+    ws1["!cols"] = [{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws1, "Summary");
 
     // Sheet 2 — Raw Entries
@@ -27,10 +79,7 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
         e.vote2021, e.vote2024, e.vote2026, e.whoWillWin, e.normalizedScore
       ]);
       const ws2 = XLSX.utils.aoa_to_sheet([...entryHeaders, ...entryRows]);
-      ws2["!cols"] = [
-        {wch:22},{wch:20},{wch:20},{wch:14},{wch:14},{wch:16},
-        {wch:12},{wch:12},{wch:12},{wch:14},{wch:18}
-      ];
+      ws2["!cols"] = [{wch:22},{wch:20},{wch:20},{wch:14},{wch:14},{wch:16},{wch:12},{wch:12},{wch:12},{wch:14},{wch:18}];
       XLSX.utils.book_append_sheet(wb, ws2, "Raw Entries");
     }
 
@@ -40,30 +89,16 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
   return (
     <div className="summary-wrap">
       <div className="summary-header-row">
-        <h2 className="summary-title">
-          Summary — {tabName}
-          {data && !data.found && <span className="not-found-badge"> (not generated yet)</span>}
-        </h2>
-        <button
-          className="download-btn"
-          onClick={downloadExcel}
-          disabled={!data?.rows?.length}
-        >
+        <h2 className="summary-title">Summary — {tabName}</h2>
+        <button className="download-btn" onClick={downloadExcel} disabled={rows.length === 0 || loading}>
           ⬇ Download Excel
         </button>
       </div>
 
       {loading ? (
-        <div className="loading-msg">Fetching summary…</div>
-      ) : error && !data ? (
-        <div className="error-banner">⚠ {error}</div>
-      ) : !data?.found ? (
-        <div className="info-banner">
-          No summary tab found for <strong>{tabName}</strong>. The report is auto-generated at 8 PM IST.
-          <br /><br />To generate it now: open <strong>Apps Script → select <code>generateDailyReport</code> → ▶ Run</strong>
-        </div>
-      ) : data.rows.length === 0 ? (
-        <div className="info-banner">Summary tab exists but has no data.</div>
+        <div className="loading-msg">Fetching entries…</div>
+      ) : rows.length === 0 ? (
+        <div className="info-banner">No entries found for <strong>{tabName}</strong>. Select a date that has data.</div>
       ) : (
         <>
           <div className="table-wrap">
@@ -80,7 +115,7 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
                 </tr>
               </thead>
               <tbody>
-                {data.rows.map((row, i) => (
+                {rows.map((row, i) => (
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     <td className="ac-col">{row.ac}</td>
                     <td className="num-col">{row.totalEntries}</td>
@@ -89,10 +124,7 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
                     <td className="num-col bjp-val">{row.bjp}</td>
                     <td className="num-col oth-val">{row.others}</td>
                     <td>
-                      <span
-                        className="winner-badge"
-                        style={{ background: partyColor[row.winner] || "#1d4ed8" }}
-                      >
+                      <span className="winner-badge" style={{ background: partyColor[row.winner] || "#1d4ed8" }}>
                         {row.winner}
                       </span>
                     </td>
@@ -102,31 +134,26 @@ export default function SummaryView({ data, tabName, loading, error, entries }) 
             </table>
           </div>
 
-          {/* Visual bar chart */}
+          {/* Bar chart */}
           <div className="bar-section">
             <h3 className="bar-section-title">Party Share by AC</h3>
-            {data.rows.map((row, i) => {
+            {rows.map((row, i) => {
               const vals = [
-                { party: "LDF", pct: parseFloat(row.ldf), color: "#dc2626" },
-                { party: "UDF", pct: parseFloat(row.udf), color: "#2563eb" },
-                { party: "BJP/NDA", pct: parseFloat(row.bjp), color: "#ea580c" },
-                { party: "Others", pct: parseFloat(row.others), color: "#6b7280" },
+                { party: "LDF",     pct: parseFloat(row.ldf),    color: "#dc2626" },
+                { party: "UDF",     pct: parseFloat(row.udf),    color: "#2563eb" },
+                { party: "BJP/NDA", pct: parseFloat(row.bjp),    color: "#ea580c" },
+                { party: "Others",  pct: parseFloat(row.others), color: "#6b7280" },
               ];
               return (
                 <div key={i} className="bar-row">
                   <div className="bar-label">{row.ac}</div>
                   <div className="bar-track">
-                    {vals.map(v => (
-                      v.pct > 0 && (
-                        <div
-                          key={v.party}
-                          className="bar-seg"
-                          style={{ width: `${v.pct}%`, background: v.color }}
-                          title={`${v.party}: ${v.pct.toFixed(1)}%`}
-                        >
-                          {v.pct > 8 && <span className="bar-seg-label">{v.party} {v.pct.toFixed(1)}%</span>}
-                        </div>
-                      )
+                    {vals.map(v => v.pct > 0 && (
+                      <div key={v.party} className="bar-seg"
+                        style={{ width: `${v.pct}%`, background: v.color }}
+                        title={`${v.party}: ${v.pct.toFixed(1)}%`}>
+                        {v.pct > 8 && <span className="bar-seg-label">{v.party} {v.pct.toFixed(1)}%</span>}
+                      </div>
                     ))}
                   </div>
                   <div className="bar-winner" style={{ color: partyColor[row.winner] }}>{row.winner}</div>
