@@ -10,6 +10,57 @@ export const ACS = [
   "Kasaragod","Manjeshwaram"
 ];
 
+/** Official Kerala AC numbers (matches cast / ward mapping; sheet still stores name only). */
+export const AC_NUMBER_BY_NAME = {
+  Kattakkada: "138",
+  Kovalam: "139",
+  Vattiyoorkavu: "133",
+  Thiruvananthapuram: "134",
+  Nemom: "135",
+  Attingal: "128",
+  Chathannoor: "126",
+  Aranmula: "113",
+  Thiruvalla: "111",
+  Chengannur: "110",
+  Adoor: "115",
+  Poonjar: "101",
+  Kanjirappally: "100",
+  Pala: "93",
+  Thrissur: "67",
+  Kunnathunad: "84",
+  Palakkad: "56",
+  "Kozhikode North": "27",
+  Kasaragod: "2",
+  Manjeshwaram: "1",
+};
+
+export function getAcNo(acName) {
+  const key = String(acName || "").trim();
+  return AC_NUMBER_BY_NAME[key] || "";
+}
+
+/** Dropdown / chip label — does not change stored `ac` value. */
+export function formatAcSelectLabel(acName) {
+  const no = getAcNo(acName);
+  const name = String(acName || "").trim();
+  return no ? `${no} — ${name}` : name || "—";
+}
+
+function acSortKey(name) {
+  const n = getAcNo(name);
+  return n ? parseInt(n, 10) : 9999;
+}
+
+/** Sort constituency names by official AC number, then alphabetically. */
+export function sortAcNames(names) {
+  return [...names].sort((a, b) => {
+    const ka = acSortKey(a);
+    const kb = acSortKey(b);
+    if (ka !== kb) return ka - kb;
+    return String(a).localeCompare(String(b));
+  });
+}
+
 // Format today as d/M/yyyy for the API
 export function todayStr() {
   const d = new Date();

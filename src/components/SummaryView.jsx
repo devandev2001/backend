@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import * as XLSX from "xlsx";
+import { getAcNo, sortAcNames } from "../config";
 
 const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
@@ -22,7 +23,7 @@ function calcSummary(entries) {
     }
   });
 
-  return Object.keys(acMap).sort().map(ac => {
+  return sortAcNames(Object.keys(acMap)).map(ac => {
     const partyData = acMap[ac];
     let totalEntries = 0;
     let grandTotal = 0;
@@ -92,6 +93,7 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
         <table className="summary-table summary-table-centered">
           <thead>
             <tr>
+              <th className="ac-no-col">AC No.</th>
               <th>Assembly Constituency</th>
               <th>Total Entries</th>
               <th className="ldf-col">LDF %</th>
@@ -104,6 +106,7 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
           <tbody>
             {rows.map((row, i) => (
               <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
+                <td className="ac-no-col num-col">{getAcNo(row.ac) || "—"}</td>
                 <td className="ac-col">{row.ac}</td>
                 <td className="num-col">{row.totalEntries}</td>
                 <td className="num-col ldf-val">{row.ldf}</td>
@@ -132,7 +135,9 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
           ];
           return (
             <div key={i} className="bar-row">
-              <div className="bar-label">{row.ac}</div>
+              <div className="bar-label">
+                {getAcNo(row.ac) ? <><span className="bar-ac-no">{getAcNo(row.ac)}</span> {row.ac}</> : row.ac}
+              </div>
               <div className="bar-track">
                 {vals.map(v => v.pct > 0 && (
                   <div key={v.party} className="bar-seg"
@@ -166,29 +171,29 @@ export default function SummaryView({
   function downloadExcel(includeCumulativeSheet) {
     const wb = XLSX.utils.book_new();
 
-    const summaryHeaders = [["Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
-    const summaryRows = rows.map(r => [r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+    const summaryHeaders = [["AC No.","Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
+    const summaryRows = rows.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
     const ws1 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRows]);
-    ws1["!cols"] = [{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+    ws1["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws1, "Summary");
 
     if (includeCumulativeSheet && cumRows.length > 0) {
-      const cumData = cumRows.map(r => [r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+      const cumData = cumRows.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
       const wsC = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumData]);
-      wsC["!cols"] = [{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+      wsC["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
       XLSX.utils.book_append_sheet(wb, wsC, "Cumulative");
     }
 
     if (entries && entries.length > 0) {
-      const entryHeaders = [["Timestamp","AC","FA Name","Caste Weight","Gender Weight","Age Weight",
+      const entryHeaders = [["Timestamp","AC No.","AC","FA Name","Caste Weight","Gender Weight","Age Weight",
                              "Vote 2021","Vote 2024","Vote 2026","Who Will Win","Normalized Score"]];
       const entryRows = entries.map(e => [
-        e.timestamp, e.ac, e.faName,
+        e.timestamp, getAcNo(e.ac) || "", e.ac, e.faName,
         e.casteWeight, e.genderWeight, e.ageWeight,
         e.vote2021, e.vote2024, e.vote2026, e.whoWillWin, e.normalizedScore
       ]);
       const ws2 = XLSX.utils.aoa_to_sheet([...entryHeaders, ...entryRows]);
-      ws2["!cols"] = [{wch:22},{wch:20},{wch:20},{wch:14},{wch:14},{wch:16},{wch:12},{wch:12},{wch:12},{wch:14},{wch:18}];
+      ws2["!cols"] = [{wch:22},{wch:8},{wch:20},{wch:20},{wch:14},{wch:14},{wch:16},{wch:12},{wch:12},{wch:12},{wch:14},{wch:18}];
       XLSX.utils.book_append_sheet(wb, ws2, "Raw Entries");
     }
 

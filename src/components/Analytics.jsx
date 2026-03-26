@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList,
 } from "recharts";
 import { getCasteLabel, getGenderLabel, getAgeLabel } from "../demographics";
-import { ACS } from "../config";
+import { ACS, formatAcSelectLabel, sortAcNames } from "../config";
 
 const CASTE_COLORS = {
   Nair:      "#3b82f6",
@@ -296,7 +296,10 @@ export default function Analytics({ entries, loading }) {
 
   const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total } = useAnalyticsData(filtered);
 
-  const filterLabel = [filterAC || "All ACs", filterFA || "All FAs"].join(" › ");
+  const filterLabel = [
+    filterAC ? formatAcSelectLabel(filterAC) : "All ACs",
+    filterFA || "All FAs",
+  ].join(" › ");
 
   if (loading) {
     return <div className="loading-msg" style={{ marginTop: 40 }}>Loading analytics…</div>;
@@ -316,7 +319,9 @@ export default function Analytics({ entries, loading }) {
           <select className="filter-select" value={filterAC}
             onChange={e => { setFilterAC(e.target.value); setFilterFA(""); }}>
             <option value="">All ACs</option>
-            {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
+            {sortAcNames(ACS).map(ac => (
+              <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
+            ))}
           </select>
         </div>
         <div className="filter-group">

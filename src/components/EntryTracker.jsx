@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ACS, PARTIES } from "../config";
+import { ACS, PARTIES, formatAcSelectLabel, getAcNo, sortAcNames } from "../config";
 
 const DEFAULT_LIMIT = 100;
 
@@ -45,7 +45,16 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
     if (!filtered) return [];
     const counts = {};
     filtered.forEach(e => { counts[e.ac] = (counts[e.ac] || 0) + 1; });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const pairs = Object.entries(counts);
+    pairs.sort((a, b) => {
+      const na = getAcNo(a[0]);
+      const nb = getAcNo(b[0]);
+      if (na && nb) return parseInt(na, 10) - parseInt(nb, 10);
+      if (na && !nb) return -1;
+      if (!na && nb) return 1;
+      return b[1] - a[1];
+    });
+    return pairs;
   }, [filtered]);
 
   return (
@@ -56,7 +65,9 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
           <label className="filter-label">Assembly Constituency</label>
           <select className="filter-select" value={filterAC} onChange={e => handleACChange(e.target.value)}>
             <option value="">All Constituencies</option>
-            {ACS.map(ac => <option key={ac} value={ac}>{ac}</option>)}
+            {sortAcNames(ACS).map(ac => (
+              <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
+            ))}
           </select>
         </div>
         <div className="filter-group">
@@ -120,7 +131,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
           <div className="mini-title">Entries by AC</div>
           {allACCounts.map(([ac, cnt]) => (
             <div key={ac} className="mini-row">
-              <span className="mini-name">{ac}</span>
+              <span className="mini-name">{formatAcSelectLabel(ac)}</span>
               <span className="mini-count">{cnt}</span>
             </div>
           ))}
@@ -131,7 +142,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
             {filterAC || filterFA || filterParty ? (
               <>
                 <div style={{ marginBottom: 6 }}>
-                  {filterAC && <span className="filter-chip">{filterAC}</span>}
+                  {filterAC && <span className="filter-chip">{formatAcSelectLabel(filterAC)}</span>}
                   {filterFA && <span className="filter-chip">{filterFA}</span>}
                   {filterParty && <span className="filter-chip">{filterParty}</span>}
                 </div>
@@ -174,6 +185,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
               <tr>
                 <th>#</th>
                 <th>Time</th>
+                <th className="ac-no-col">AC No.</th>
                 <th>AC</th>
                 <th>FA Name</th>
                 <th>Caste Wt</th>
@@ -188,7 +200,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={12} className="no-data">
+                <tr><td colSpan={13} className="no-data">
                   {!entries?.length
                     ? "No rows for this date range (or API returned nothing). Widen From→To, try Cumulative, or check the sheet’s first tab."
                     : (filterAC || filterFA || filterParty)
@@ -200,6 +212,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     <td className="num-col">{i + 1}</td>
                     <td className="time-col">{String(e.timestamp).split(",")[1]?.trim() || e.timestamp}</td>
+                    <td className="ac-no-col num-col">{getAcNo(e.ac) || "—"}</td>
                     <td className="ac-col">{e.ac}</td>
                     <td style={{ fontWeight: 500 }}>{e.faName}</td>
                     <td className="num-col">{parseFloat(e.casteWeight).toFixed(4)}</td>
