@@ -412,6 +412,24 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   align-items: start;
   gap: 10px;
 }
+.summary-col .summary-section-block {
+  border: 1px solid #d7e3ff;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbff;
+}
+.summary-col-selected .summary-title::before,
+.summary-col-cumulative .summary-title::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.summary-col-selected .summary-title::before { background: #2563eb; }
+.summary-col-cumulative .summary-title::before { background: #7c3aed; }
 .summary-section-divider {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--outline-variant), transparent);

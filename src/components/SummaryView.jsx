@@ -10,7 +10,10 @@ function calcSummary(entries, partyField = "whoWillWin") {
 
   const acMap = {};
   entries.forEach(e => {
-    const ac = String(e.ac).trim();
+    const ac = String(e.ac || "").trim();
+    const acKey = ac.toLowerCase();
+    // Hide blank rows and requested AC exclusions.
+    if (!ac || acKey === "kovalam" || acKey === "kowalam") return;
     const party = String(e[partyField]).trim();
     const score = parseFloat(e.normalizedScore) || 0;
     if (!acMap[ac]) {
@@ -217,7 +220,7 @@ export default function SummaryView({
       </div>
       {showCumulativeBelow && (
         <div className="summary-compare-grid two-cols">
-          <div>
+          <div className="summary-col summary-col-selected">
             <SummarySection
               title={`Selected / Today — ${tabName} — ${metricTitle}`}
               rows={rows}
@@ -227,12 +230,14 @@ export default function SummaryView({
               downloadDisabled={rows.length === 0 || loading}
             />
           </div>
-          <div>
+          <div className="summary-col summary-col-cumulative">
             <SummarySection
               title={`Cumulative — all dates — ${metricTitle}`}
               rows={cumRows}
               loading={!!cumulativeLoading}
-              showDownload={false}
+              showDownload
+              onDownload={() => downloadExcel(true)}
+              downloadDisabled={cumRows.length === 0 || !!cumulativeLoading}
             />
           </div>
         </div>
