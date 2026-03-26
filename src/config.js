@@ -5,7 +5,7 @@ export const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 
 export const ACS = [
   "Kattakkada","Kovalam","Vattiyoorkavu","Thiruvananthapuram","Nemom","Attingal",
-  "Chathannoor","Aranmula","Thiruvalla","Chengannur","Adoor","Poonjar",
+  "Chathannoor","Aranmula","Thiruvalla","Chengannur","Adoor","Poonjar","Kanjirappally",
   "Pala","Thrissur","Kunnathunad","Palakkad","Kozhikode North",
   "Kasaragod","Manjeshwaram"
 ];
