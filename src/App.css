@@ -345,10 +345,31 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .entry-table, .summary-table {
   width: 100%; border-collapse: collapse; font-size: 12px; background: var(--surface-bright);
 }
-.entry-table th, .summary-table th {
+.entry-table th {
   background: var(--primary); color: #fff; padding: 10px 14px;
   font-weight: 700; text-align: left; white-space: nowrap; font-size: 10px;
   text-transform: uppercase; letter-spacing: 0.1em;
+}
+/* Summary & Download — larger, high-contrast header row */
+.summary-table thead th {
+  background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%);
+  color: #fff;
+  padding: 16px 18px;
+  font-weight: 800;
+  font-family: var(--font-headline, system-ui, sans-serif);
+  text-align: left;
+  white-space: nowrap;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1.35;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.22);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.summary-table.summary-table-centered thead th {
+  font-size: 13px;
+  padding: 18px 20px;
+  letter-spacing: 0.12em;
 }
 .entry-table td, .summary-table td { padding: 9px 14px; border-bottom: 1px solid var(--surface-container-high); vertical-align: middle; }
 .row-even { background: var(--surface-bright); }
