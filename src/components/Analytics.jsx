@@ -176,11 +176,11 @@ function DonutChart({ data, colors, title }) {
 }
 
 /** Main election-style chart: vertical bars, full width, high contrast. */
-function WhoWillWinHeroChart({ data, colors }) {
+function PartyHeroChart({ data, colors, title, subtitle }) {
   if (!data.length) {
     return (
       <div className="analytics-card analytics-card-hero">
-        <h3 className="analytics-hero-title">Who will win — 2026 prediction</h3>
+        <h3 className="analytics-hero-title">{title}</h3>
         <div className="analytics-empty" style={{ padding: "32px 16px" }}>No prediction data for this filter.</div>
       </div>
     );
@@ -200,9 +200,9 @@ function WhoWillWinHeroChart({ data, colors }) {
 
   return (
     <div className="analytics-card analytics-card-hero">
-      <h3 className="analytics-hero-title">Who will win — 2026 prediction</h3>
+      <h3 className="analytics-hero-title">{title}</h3>
       <p className="analytics-hero-sub">
-        Share by predicted winner using normalized score weights for the current filter (vertical bar chart, 0–100% scale).
+        {subtitle}
       </p>
       <ResponsiveContainer width="100%" height={340}>
         <BarChart
@@ -355,7 +355,20 @@ export default function Analytics({ entries, loading }) {
       )}
 
       {filtered.length > 0 && (
-        <WhoWillWinHeroChart data={whoWillWin} colors={VOTE_COLORS} />
+        <div className="analytics-row">
+          <PartyHeroChart
+            data={whoWillWin}
+            colors={VOTE_COLORS}
+            title="Who will win — 2026 prediction"
+            subtitle="Share by predicted winner using normalized score weights (0–100% scale)."
+          />
+          <PartyHeroChart
+            data={vote2026}
+            colors={VOTE_COLORS}
+            title="Who will you vote for — 2026"
+            subtitle="Share by stated 2026 vote using normalized score weights (0–100% scale)."
+          />
+        </div>
       )}
 
       <div className="analytics-row">
@@ -372,9 +385,6 @@ export default function Analytics({ entries, loading }) {
         <HBarChart data={vote2024} colors={VOTE_COLORS} title="Vote 2024 GE" />
       </div>
 
-      <div className="analytics-row single">
-        <HBarChart data={vote2026} colors={VOTE_COLORS} title="Vote 2026 AE (weighted by normalized score)" />
-      </div>
     </div>
   );
 }
