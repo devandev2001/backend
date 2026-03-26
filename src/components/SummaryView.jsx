@@ -121,33 +121,6 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
         </table>
       </div>
 
-      <div className="bar-section">
-        <h3 className="bar-section-title">Party share by AC</h3>
-        {rows.map((row, i) => {
-          const vals = [
-            { party: "LDF",     pct: parseFloat(row.ldf),    color: "#dc2626" },
-            { party: "UDF",     pct: parseFloat(row.udf),    color: "#2563eb" },
-            { party: "BJP/NDA", pct: parseFloat(row.bjp),    color: "#ea580c" },
-          ];
-          return (
-            <div key={i} className="bar-row">
-              <div className="bar-label">
-                {getAcNo(row.ac) ? <><span className="bar-ac-no">{getAcNo(row.ac)}</span> {row.ac}</> : row.ac}
-              </div>
-              <div className="bar-track">
-                {vals.map(v => v.pct > 0 && (
-                  <div key={v.party} className="bar-seg"
-                    style={{ width: `${v.pct}%`, background: v.color }}
-                    title={`${v.party}: ${v.pct.toFixed(1)}%`}>
-                    {v.pct > 8 && <span className="bar-seg-label">{v.party} {v.pct.toFixed(1)}%</span>}
-                  </div>
-                ))}
-              </div>
-              <div className="bar-winner" style={{ color: partyColor[row.winner] }}>{row.winner}</div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -242,25 +215,26 @@ export default function SummaryView({
           Vote 2026
         </button>
       </div>
-      <div className={`summary-compare-grid ${showCumulativeBelow ? "two-cols" : ""}`}>
-        <SummarySection
-          title={showCumulativeBelow ? `Selected / Today — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
-          rows={rows}
-          loading={false}
-          showDownload
-          onDownload={() => downloadExcel(showCumulativeBelow)}
-          downloadDisabled={rows.length === 0 || loading}
-        />
+      <SummarySection
+        title={showCumulativeBelow ? `Selected / Today — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
+        rows={rows}
+        loading={false}
+        showDownload
+        onDownload={() => downloadExcel(showCumulativeBelow)}
+        downloadDisabled={rows.length === 0 || loading}
+      />
 
-        {showCumulativeBelow && (
+      {showCumulativeBelow && (
+        <>
+          <div className="summary-section-divider" />
           <SummarySection
             title={`Cumulative — all dates — ${metricTitle}`}
             rows={cumRows}
             loading={!!cumulativeLoading}
             showDownload={false}
           />
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
