@@ -19,7 +19,12 @@ const TAB_TITLES = {
   analytics: { title: "Analytics",           sub: "Demographic & vote distribution charts" },
 };
 
-const today = new Date().toISOString().split("T")[0];
+function localIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Local calendar date (avoid UTC day skew from toISOString for non-UTC time zones)
+const today = localIso(new Date());
 
 export default function App() {
   const [tab, setTab]             = useState("entries");
@@ -181,11 +186,11 @@ export default function App() {
                 <button className="shortcut-btn" onClick={() => { setFromDate(today); setToDate(today); }}>Today</button>
                 <button className="shortcut-btn" onClick={() => {
                   const d = new Date(); d.setDate(d.getDate() - 6);
-                  setFromDate(d.toISOString().split("T")[0]); setToDate(today);
+                  setFromDate(localIso(d)); setToDate(today);
                 }}>Last 7 days</button>
                 <button className="shortcut-btn" onClick={() => {
                   const d = new Date(); d.setDate(d.getDate() - 29);
-                  setFromDate(d.toISOString().split("T")[0]); setToDate(today);
+                  setFromDate(localIso(d)); setToDate(today);
                 }}>Last 30 days</button>
               </div>
             </div>
@@ -196,15 +201,15 @@ export default function App() {
             <div className="loading-msg">Fetching entries…</div>
           )}
 
-          {/* No results after fetch */}
-          {hasDateFilter && !entriesLoading && entries.length === 0 && (
+          {/* No results after fetch (summary/analytics); Entry Tracker has its own empty row */}
+          {hasDateFilter && !entriesLoading && entries.length === 0 && tab !== "entries" && (
             <div className="info-banner" style={{ marginTop: 8 }}>
               No entries found for the selected date range.
             </div>
           )}
 
-          {/* Main content tabs */}
-          {entries.length > 0 && !entriesLoading && (
+          {/* Main content tabs — always mount so Refresh / errors work even when count is 0 */}
+          {!entriesLoading && hasDateFilter && (
             <>
               {tab === "entries" && (
                 <EntryTracker
@@ -214,14 +219,14 @@ export default function App() {
                   onRefresh={refreshEntries}
                 />
               )}
-              {tab === "summary" && (
+              {tab === "summary" && entries.length > 0 && (
                 <SummaryView
                   tabName={summaryTabName}
                   loading={entriesLoading}
                   entries={entries}
                 />
               )}
-              {tab === "analytics" && (
+              {tab === "analytics" && entries.length > 0 && (
                 <Analytics
                   entries={entries}
                   loading={entriesLoading}

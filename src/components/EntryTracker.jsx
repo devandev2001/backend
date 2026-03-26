@@ -188,7 +188,13 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={12} className="no-data">No entries found for selected filters</td></tr>
+                <tr><td colSpan={12} className="no-data">
+                  {!entries?.length
+                    ? "No rows for this date range (or API returned nothing). Widen From→To, try Cumulative, or check the sheet’s first tab."
+                    : (filterAC || filterFA || filterParty)
+                      ? "No entries match the filters above — try clearing them."
+                      : "No entries to show."}
+                </td></tr>
               ) : (
                 (showAll ? filtered : filtered.slice(0, DEFAULT_LIMIT)).map((e, i) => (
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>

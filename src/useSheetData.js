@@ -67,7 +67,8 @@ export function useDates() {
   return { dates, loading };
 }
 
-// Fetches entries for a specific date range (from/to inclusive)
+// Fetches entries for a specific date range (from/to inclusive, yyyy-mm-dd).
+// Uses API ?from=&to= so Sheet1 rows are matched by real calendar day — not by summary tab names.
 export function useDateRangeEntries(fromDate, toDate) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,26 +78,10 @@ export function useDateRangeEntries(fromDate, toDate) {
     if (!fromDate || !toDate) { setEntries([]); return; }
     setLoading(true); setError(null);
     try {
-      const datesRes = await fetch(`${SCRIPT_URL}?action=dates`);
-      const datesJson = await datesRes.json();
-      const allDates = datesJson.dates || [];
-
-      // Convert API dates ("d/M/yyyy") to "yyyy-mm-dd" for safe string comparison
-      const inRange = allDates.filter(d => {
-        const [day, month, year] = d.split("/").map(Number);
-        const iso = `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-        return iso >= fromDate && iso <= toDate;
-      });
-
-      if (inRange.length === 0) { setEntries([]); setLoading(false); return; }
-
-      const results = await Promise.all(
-        inRange.map(d =>
-          fetch(`${SCRIPT_URL}?action=entries&date=${encodeURIComponent(d)}`)
-            .then(r => r.json()).then(j => j.entries || []).catch(() => [])
-        )
-      );
-      setEntries(results.flat());
+      const url = `${SCRIPT_URL}?action=entries&from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      setEntries(json.entries || []);
     } catch (e) {
       setError("Failed to fetch entries for date range.");
     } finally { setLoading(false); }
@@ -106,7 +91,7 @@ export function useDateRangeEntries(fromDate, toDate) {
   return { entries, loading, error, refresh: fetch_ };
 }
 
-// Fetches all available dates and merges all entries into one flat array
+// All rows from Sheet1 (no date filter) — does not depend on summary tabs.
 export function useCumulativeEntries() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -116,20 +101,9 @@ export function useCumulativeEntries() {
     setLoading(true);
     setError(null);
     try {
-      const datesRes = await fetch(`${SCRIPT_URL}?action=dates`);
-      const datesJson = await datesRes.json();
-      const dates = datesJson.dates || [];
-      if (dates.length === 0) { setEntries([]); return; }
-
-      const results = await Promise.all(
-        dates.map(d =>
-          fetch(`${SCRIPT_URL}?action=entries&date=${encodeURIComponent(d)}`)
-            .then(r => r.json())
-            .then(j => j.entries || [])
-            .catch(() => [])
-        )
-      );
-      setEntries(results.flat());
+      const res = await fetch(`${SCRIPT_URL}?action=entries`);
+      const json = await res.json();
+      setEntries(json.entries || []);
     } catch (e) {
       setError("Failed to fetch cumulative entries.");
     } finally {
