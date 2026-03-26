@@ -215,23 +215,38 @@ export default function SummaryView({
           Vote 2026
         </button>
       </div>
-      <SummarySection
-        title={showCumulativeBelow ? `Selected / Today — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
-        rows={rows}
-        loading={false}
-        showDownload
-        onDownload={() => downloadExcel(showCumulativeBelow)}
-        downloadDisabled={rows.length === 0 || loading}
-      />
-
       {showCumulativeBelow && (
+        <div className="summary-compare-grid two-cols">
+          <div>
+            <SummarySection
+              title={`Selected / Today — ${tabName} — ${metricTitle}`}
+              rows={rows}
+              loading={false}
+              showDownload
+              onDownload={() => downloadExcel(showCumulativeBelow)}
+              downloadDisabled={rows.length === 0 || loading}
+            />
+          </div>
+          <div>
+            <SummarySection
+              title={`Cumulative — all dates — ${metricTitle}`}
+              rows={cumRows}
+              loading={!!cumulativeLoading}
+              showDownload={false}
+            />
+          </div>
+        </div>
+      )}
+
+      {!showCumulativeBelow && (
         <>
-          <div className="summary-section-divider" />
           <SummarySection
-            title={`Cumulative — all dates — ${metricTitle}`}
-            rows={cumRows}
-            loading={!!cumulativeLoading}
-            showDownload={false}
+            title={`Summary — ${tabName} — ${metricTitle}`}
+            rows={rows}
+            loading={false}
+            showDownload
+            onDownload={() => downloadExcel(showCumulativeBelow)}
+            downloadDisabled={rows.length === 0 || loading}
           />
         </>
       )}

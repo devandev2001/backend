@@ -405,11 +405,12 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .summary-compare-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 .summary-compare-grid.two-cols {
   grid-template-columns: 1fr 1fr;
   align-items: start;
+  gap: 10px;
 }
 .summary-section-divider {
   height: 2px;
@@ -463,6 +464,14 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 
 /* Summary table: center cells + stronger body contrast */
 .summary-table.summary-table-centered { font-size: 13px; }
+.summary-compare-grid .summary-table.summary-table-centered { font-size: 11px; }
+.summary-compare-grid .summary-table thead th {
+  font-size: 10px !important;
+  padding: 10px 10px !important;
+  letter-spacing: 0.08em !important;
+}
+.summary-compare-grid .summary-table td { padding: 6px 8px; }
+.summary-compare-grid .summary-title { font-size: 13px; }
 .summary-table-centered th,
 .summary-table-centered td { text-align: center !important; }
 .summary-table-centered .ac-no-col {
