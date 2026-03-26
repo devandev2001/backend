@@ -126,10 +126,30 @@ export default function App() {
             </div>
           </div>
 
-          {/* Date range controls */}
+          {/* Mode tabs (top right) + date range or cumulative */}
           <div className="topbar-right">
+            <div className="topbar-mode-tabs" role="tablist" aria-label="Data range mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!cumulative}
+                className={`topbar-mode-tab ${!cumulative ? "active" : ""}`}
+                onClick={() => setCumulative(false)}
+              >
+                Date range
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={cumulative}
+                className={`topbar-mode-tab ${cumulative ? "active" : ""}`}
+                onClick={() => setCumulative(true)}
+              >
+                Cumulative
+              </button>
+            </div>
             {cumulative ? (
-              <span className="cumul-pill">📅 All Dates Combined</span>
+              <span className="cumul-pill">📅 All dates combined</span>
             ) : (
               <div className="date-range-group">
                 <div className="date-range-field">
@@ -224,6 +244,8 @@ export default function App() {
                   tabName={summaryTabName}
                   loading={entriesLoading}
                   entries={entries}
+                  cumulativeEntries={!cumulative ? cumul.entries : null}
+                  cumulativeLoading={cumul.loading}
                 />
               )}
               {tab === "analytics" && entries.length > 0 && (

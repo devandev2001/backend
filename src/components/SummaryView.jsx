@@ -4,7 +4,6 @@ import * as XLSX from "xlsx";
 const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
 
-// Calculate summary rows from raw entries (client-side, no 8PM needed)
 function calcSummary(entries) {
   if (!entries || entries.length === 0) return [];
 
@@ -56,20 +55,130 @@ function calcSummary(entries) {
   });
 }
 
-export default function SummaryView({ tabName, loading, entries }) {
-  const rows = useMemo(() => calcSummary(entries), [entries]);
+function SummarySection({ title, rows, loading, showDownload, onDownload, downloadDisabled }) {
+  if (loading) {
+    return (
+      <div className="summary-section-block">
+        <div className="summary-header-row">
+          <h2 className="summary-title">{title}</h2>
+        </div>
+        <div className="loading-msg">Loading…</div>
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="summary-section-block">
+        <div className="summary-header-row">
+          <h2 className="summary-title">{title}</h2>
+        </div>
+        <div className="info-banner">No entries for this view.</div>
+      </div>
+    );
+  }
 
-  function downloadExcel() {
+  return (
+    <div className="summary-section-block">
+      <div className="summary-header-row">
+        <h2 className="summary-title">{title}</h2>
+        {showDownload && (
+          <button className="download-btn" onClick={onDownload} disabled={downloadDisabled}>
+            ⬇ Download Excel
+          </button>
+        )}
+      </div>
+
+      <div className="table-wrap">
+        <table className="summary-table summary-table-centered">
+          <thead>
+            <tr>
+              <th>Assembly Constituency</th>
+              <th>Total Entries</th>
+              <th className="ldf-col">LDF %</th>
+              <th className="udf-col">UDF %</th>
+              <th className="bjp-col">BJP/NDA %</th>
+              <th className="oth-col">Others %</th>
+              <th>Predicted Winner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
+                <td className="ac-col">{row.ac}</td>
+                <td className="num-col">{row.totalEntries}</td>
+                <td className="num-col ldf-val">{row.ldf}</td>
+                <td className="num-col udf-val">{row.udf}</td>
+                <td className="num-col bjp-val">{row.bjp}</td>
+                <td className="num-col oth-val">{row.others}</td>
+                <td>
+                  <span className="winner-badge" style={{ background: partyColor[row.winner] || "#1d4ed8" }}>
+                    {row.winner}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bar-section">
+        <h3 className="bar-section-title">Party share by AC</h3>
+        {rows.map((row, i) => {
+          const vals = [
+            { party: "LDF",     pct: parseFloat(row.ldf),    color: "#dc2626" },
+            { party: "UDF",     pct: parseFloat(row.udf),    color: "#2563eb" },
+            { party: "BJP/NDA", pct: parseFloat(row.bjp),    color: "#ea580c" },
+            { party: "Others",  pct: parseFloat(row.others), color: "#6b7280" },
+          ];
+          return (
+            <div key={i} className="bar-row">
+              <div className="bar-label">{row.ac}</div>
+              <div className="bar-track">
+                {vals.map(v => v.pct > 0 && (
+                  <div key={v.party} className="bar-seg"
+                    style={{ width: `${v.pct}%`, background: v.color }}
+                    title={`${v.party}: ${v.pct.toFixed(1)}%`}>
+                    {v.pct > 8 && <span className="bar-seg-label">{v.party} {v.pct.toFixed(1)}%</span>}
+                  </div>
+                ))}
+              </div>
+              <div className="bar-winner" style={{ color: partyColor[row.winner] }}>{row.winner}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function SummaryView({
+  tabName,
+  loading,
+  entries,
+  cumulativeEntries,
+  cumulativeLoading,
+}) {
+  const rows = useMemo(() => calcSummary(entries), [entries]);
+  const cumRows = useMemo(() => calcSummary(cumulativeEntries || []), [cumulativeEntries]);
+
+  const showCumulativeBelow = cumulativeEntries != null;
+
+  function downloadExcel(includeCumulativeSheet) {
     const wb = XLSX.utils.book_new();
 
-    // Sheet 1 — Summary
     const summaryHeaders = [["Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
     const summaryRows = rows.map(r => [r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
     const ws1 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRows]);
     ws1["!cols"] = [{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws1, "Summary");
 
-    // Sheet 2 — Raw Entries
+    if (includeCumulativeSheet && cumRows.length > 0) {
+      const cumData = cumRows.map(r => [r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+      const wsC = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumData]);
+      wsC["!cols"] = [{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+      XLSX.utils.book_append_sheet(wb, wsC, "Cumulative");
+    }
+
     if (entries && entries.length > 0) {
       const entryHeaders = [["Timestamp","AC","FA Name","Caste Weight","Gender Weight","Age Weight",
                              "Vote 2021","Vote 2024","Vote 2026","Who Will Win","Normalized Score"]];
@@ -86,81 +195,42 @@ export default function SummaryView({ tabName, loading, entries }) {
     XLSX.writeFile(wb, `Kerala_Survey_${tabName}.xlsx`);
   }
 
-  return (
-    <div className="summary-wrap">
-      <div className="summary-header-row">
-        <h2 className="summary-title">Summary — {tabName}</h2>
-        <button className="download-btn" onClick={downloadExcel} disabled={rows.length === 0 || loading}>
-          ⬇ Download Excel
-        </button>
-      </div>
-
-      {loading ? (
+  if (loading && rows.length === 0) {
+    return (
+      <div className="summary-wrap">
         <div className="loading-msg">Fetching entries…</div>
-      ) : rows.length === 0 ? (
-        <div className="info-banner">No entries found for <strong>{tabName}</strong>. Select a date that has data.</div>
-      ) : (
-        <>
-          <div className="table-wrap">
-            <table className="summary-table">
-              <thead>
-                <tr>
-                  <th>Assembly Constituency</th>
-                  <th>Total Entries</th>
-                  <th className="ldf-col">LDF %</th>
-                  <th className="udf-col">UDF %</th>
-                  <th className="bjp-col">BJP/NDA %</th>
-                  <th className="oth-col">Others %</th>
-                  <th>Predicted Winner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
-                    <td className="ac-col">{row.ac}</td>
-                    <td className="num-col">{row.totalEntries}</td>
-                    <td className="num-col ldf-val">{row.ldf}</td>
-                    <td className="num-col udf-val">{row.udf}</td>
-                    <td className="num-col bjp-val">{row.bjp}</td>
-                    <td className="num-col oth-val">{row.others}</td>
-                    <td>
-                      <span className="winner-badge" style={{ background: partyColor[row.winner] || "#1d4ed8" }}>
-                        {row.winner}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      </div>
+    );
+  }
 
-          {/* Bar chart */}
-          <div className="bar-section">
-            <h3 className="bar-section-title">Party Share by AC</h3>
-            {rows.map((row, i) => {
-              const vals = [
-                { party: "LDF",     pct: parseFloat(row.ldf),    color: "#dc2626" },
-                { party: "UDF",     pct: parseFloat(row.udf),    color: "#2563eb" },
-                { party: "BJP/NDA", pct: parseFloat(row.bjp),    color: "#ea580c" },
-                { party: "Others",  pct: parseFloat(row.others), color: "#6b7280" },
-              ];
-              return (
-                <div key={i} className="bar-row">
-                  <div className="bar-label">{row.ac}</div>
-                  <div className="bar-track">
-                    {vals.map(v => v.pct > 0 && (
-                      <div key={v.party} className="bar-seg"
-                        style={{ width: `${v.pct}%`, background: v.color }}
-                        title={`${v.party}: ${v.pct.toFixed(1)}%`}>
-                        {v.pct > 8 && <span className="bar-seg-label">{v.party} {v.pct.toFixed(1)}%</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bar-winner" style={{ color: partyColor[row.winner] }}>{row.winner}</div>
-                </div>
-              );
-            })}
-          </div>
+  if (rows.length === 0) {
+    return (
+      <div className="summary-wrap">
+        <div className="info-banner">No entries found for <strong>{tabName}</strong>. Select a date that has data.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="summary-wrap summary-wrap-stacked">
+      <SummarySection
+        title={showCumulativeBelow ? `Selected range — ${tabName}` : `Summary — ${tabName}`}
+        rows={rows}
+        loading={false}
+        showDownload
+        onDownload={() => downloadExcel(showCumulativeBelow)}
+        downloadDisabled={rows.length === 0 || loading}
+      />
+
+      {showCumulativeBelow && (
+        <>
+          <div className="summary-section-divider" />
+          <SummarySection
+            title="Cumulative — all dates"
+            rows={cumRows}
+            loading={!!cumulativeLoading}
+            showDownload={false}
+          />
         </>
       )}
     </div>

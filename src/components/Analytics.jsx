@@ -21,10 +21,12 @@ const AGE_COLOR  = "#6366f1";
 const V21_COLOR  = "#2563eb";
 const V24_COLOR  = "#059669";
 
-const VOTE_PARTIES = ["LDF", "UDF", "BJP/NDA", "Others", "NOTA"];
+const VOTE_PARTIES = ["LDF", "UDF", "BJP/NDA", "Others", "NOTA", "Not Voted"];
 const VOTE_COLORS  = {
   LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280", NOTA: "#94a3b8",
+  "Not Voted": "#92400e",
 };
+const WHO_WIN_ORDER = ["LDF", "UDF", "BJP/NDA", "Others"];
 
 function pct(count, total) {
   return total === 0 ? 0 : +((count / total) * 100).toFixed(1);
@@ -33,7 +35,9 @@ function pct(count, total) {
 function useAnalyticsData(entries) {
   return useMemo(() => {
     if (!entries || entries.length === 0) {
-      return { caste: [], gender: [], age: [], vote2021: [], vote2024: [], total: 0 };
+      return {
+        caste: [], gender: [], age: [], vote2021: [], vote2024: [], vote2026: [], whoWillWin: [], total: 0,
+      };
     }
 
     const casteMap = {};
@@ -41,6 +45,8 @@ function useAnalyticsData(entries) {
     const ageMap = {};
     const v21Map = {};
     const v24Map = {};
+    const v26Map = {};
+    const whoMap = {};
 
     entries.forEach(e => {
       const ac = String(e.ac || "").trim();
@@ -66,6 +72,16 @@ function useAnalyticsData(entries) {
       const v24 = String(e.vote2024 || "").trim() || "Others";
       const v24key = VOTE_PARTIES.includes(v24) ? v24 : "Others";
       v24Map[v24key] = (v24Map[v24key] || 0) + 1;
+
+      // Vote 2026 AE
+      const v26 = String(e.vote2026 || "").trim() || "Others";
+      const v26key = VOTE_PARTIES.includes(v26) ? v26 : "Others";
+      v26Map[v26key] = (v26Map[v26key] || 0) + 1;
+
+      // Who will win (2026 prediction)
+      const ww = String(e.whoWillWin || "").trim() || "Others";
+      const wwKey = WHO_WIN_ORDER.includes(ww) ? ww : "Others";
+      whoMap[wwKey] = (whoMap[wwKey] || 0) + 1;
     });
 
     const total = entries.length;
@@ -91,7 +107,15 @@ function useAnalyticsData(entries) {
       name: p, count: v24Map[p], value: pct(v24Map[p], total),
     }));
 
-    return { caste, gender, age, vote2021, vote2024, total };
+    const vote2026 = VOTE_PARTIES.filter(p => v26Map[p]).map(p => ({
+      name: p, count: v26Map[p], value: pct(v26Map[p], total),
+    }));
+
+    const whoWillWin = WHO_WIN_ORDER.filter(p => whoMap[p]).map(p => ({
+      name: p, count: whoMap[p], value: pct(whoMap[p], total),
+    }));
+
+    return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total };
   }, [entries]);
 }
 
@@ -138,6 +162,72 @@ function DonutChart({ data, colors, title }) {
           <Tooltip content={<CustomTooltip />} />
           <Legend formatter={(v) => <span style={{ fontSize: 12 }}>{v}</span>} />
         </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Main election-style chart: vertical bars, full width, high contrast. */
+function WhoWillWinHeroChart({ data, colors }) {
+  if (!data.length) {
+    return (
+      <div className="analytics-card analytics-card-hero">
+        <h3 className="analytics-hero-title">Who will win — 2026 prediction</h3>
+        <div className="analytics-empty" style={{ padding: "32px 16px" }}>No prediction data for this filter.</div>
+      </div>
+    );
+  }
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload?.length) {
+      const d = payload[0].payload;
+      return (
+        <div className="chart-tooltip">
+          <strong>{d.name}</strong>: {d.value}% of responses ({d.count} entries)
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="analytics-card analytics-card-hero">
+      <h3 className="analytics-hero-title">Who will win — 2026 prediction</h3>
+      <p className="analytics-hero-sub">
+        Share of responses by predicted winner for the current filter (vertical bar chart, 0–100% scale).
+      </p>
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart
+          data={data}
+          margin={{ top: 28, right: 20, left: 4, bottom: 16 }}
+          barCategoryGap="18%"
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 13, fontWeight: 800, fill: "#0f172a" }}
+            tickLine={false}
+            axisLine={{ stroke: "#cbd5e1" }}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tickFormatter={(v) => `${v}%`}
+            tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+            width={44}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(30, 58, 138, 0.06)" }} />
+          <Bar dataKey="value" radius={[10, 10, 0, 0]} maxBarSize={88}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={colors[entry.name] || "#64748b"} />
+            ))}
+            <LabelList
+              dataKey="value"
+              position="top"
+              formatter={(v) => `${v}%`}
+              style={{ fontSize: 15, fontWeight: 800, fill: "#0f172a" }}
+            />
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
@@ -204,7 +294,7 @@ export default function Analytics({ entries, loading }) {
     });
   }, [entries, filterAC, filterFA]);
 
-  const { caste, gender, age, vote2021, vote2024, total } = useAnalyticsData(filtered);
+  const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total } = useAnalyticsData(filtered);
 
   const filterLabel = [filterAC || "All ACs", filterFA || "All FAs"].join(" › ");
 
@@ -251,6 +341,10 @@ export default function Analytics({ entries, loading }) {
         </div>
       )}
 
+      {filtered.length > 0 && (
+        <WhoWillWinHeroChart data={whoWillWin} colors={VOTE_COLORS} />
+      )}
+
       <div className="analytics-row">
         <DonutChart data={caste}  colors={CASTE_COLORS}  title="Caste Distribution" />
         <DonutChart data={gender} colors={GENDER_COLORS} title="Gender Distribution" />
@@ -264,6 +358,11 @@ export default function Analytics({ entries, loading }) {
         <HBarChart data={vote2021} colors={VOTE_COLORS} title="Vote 2021 AE" />
         <HBarChart data={vote2024} colors={VOTE_COLORS} title="Vote 2024 GE" />
       </div>
+
+      <div className="analytics-row single">
+        <HBarChart data={vote2026} colors={VOTE_COLORS} title="Vote 2026 AE (stated vote)" />
+      </div>
     </div>
   );
 }
+

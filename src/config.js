@@ -4,7 +4,7 @@ export const SCRIPT_URL =
 export const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 
 export const ACS = [
-  "Kattakkada","Kovalam","Vattiyoorkavu","Thiruvananthapuram","Attingal",
+  "Kattakkada","Kovalam","Vattiyoorkavu","Thiruvananthapuram","Nemom","Attingal",
   "Chathannoor","Aranmula","Thiruvalla","Chengannur","Adoor","Poonjar",
   "Pala","Thrissur","Kunnathunad","Palakkad","Kozhikode North",
   "Kasaragod","Manjeshwaram"
