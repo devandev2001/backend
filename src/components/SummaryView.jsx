@@ -1,17 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { getAcNo, sortAcNames } from "../config";
 
 const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
 
-function calcSummary(entries) {
+function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
 
   const acMap = {};
   entries.forEach(e => {
     const ac = String(e.ac).trim();
-    const party = String(e.whoWillWin).trim();
+    const party = String(e[partyField]).trim();
     const score = parseFloat(e.normalizedScore) || 0;
     if (!acMap[ac]) {
       acMap[ac] = {};
@@ -163,8 +163,14 @@ export default function SummaryView({
   cumulativeEntries,
   cumulativeLoading,
 }) {
-  const rows = useMemo(() => calcSummary(entries), [entries]);
-  const cumRows = useMemo(() => calcSummary(cumulativeEntries || []), [cumulativeEntries]);
+  const [metricTab, setMetricTab] = useState("whoWillWin");
+  const rowsWW = useMemo(() => calcSummary(entries, "whoWillWin"), [entries]);
+  const rowsV26 = useMemo(() => calcSummary(entries, "vote2026"), [entries]);
+  const cumRowsWW = useMemo(() => calcSummary(cumulativeEntries || [], "whoWillWin"), [cumulativeEntries]);
+  const cumRowsV26 = useMemo(() => calcSummary(cumulativeEntries || [], "vote2026"), [cumulativeEntries]);
+  const rows = metricTab === "whoWillWin" ? rowsWW : rowsV26;
+  const cumRows = metricTab === "whoWillWin" ? cumRowsWW : cumRowsV26;
+  const metricTitle = metricTab === "whoWillWin" ? "Who Will Win (weighted)" : "Vote 2026 (weighted)";
 
   const showCumulativeBelow = cumulativeEntries != null;
 
@@ -172,16 +178,24 @@ export default function SummaryView({
     const wb = XLSX.utils.book_new();
 
     const summaryHeaders = [["AC No.","Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
-    const summaryRows = rows.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
-    const ws1 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRows]);
-    ws1["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
-    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
+    const summaryRowsWW = rowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+    const summaryRowsV26 = rowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+    const wsWW = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRowsWW]);
+    const wsV26 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRowsV26]);
+    wsWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+    wsV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, wsWW, "WW Summary");
+    XLSX.utils.book_append_sheet(wb, wsV26, "Vote26 Summary");
 
-    if (includeCumulativeSheet && cumRows.length > 0) {
-      const cumData = cumRows.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
-      const wsC = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumData]);
-      wsC["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
-      XLSX.utils.book_append_sheet(wb, wsC, "Cumulative");
+    if (includeCumulativeSheet && (cumRowsWW.length > 0 || cumRowsV26.length > 0)) {
+      const cumWW = cumRowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+      const cumV26 = cumRowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+      const wsCWW = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumWW]);
+      const wsCV26 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumV26]);
+      wsCWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+      wsCV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+      XLSX.utils.book_append_sheet(wb, wsCWW, "WW Cumulative");
+      XLSX.utils.book_append_sheet(wb, wsCV26, "Vote26 Cumulative");
     }
 
     if (entries && entries.length > 0) {
@@ -200,7 +214,7 @@ export default function SummaryView({
     XLSX.writeFile(wb, `Kerala_Survey_${tabName}.xlsx`);
   }
 
-  if (loading && rows.length === 0) {
+  if (loading && rowsWW.length === 0 && rowsV26.length === 0) {
     return (
       <div className="summary-wrap">
         <div className="loading-msg">Fetching entries…</div>
@@ -208,7 +222,7 @@ export default function SummaryView({
     );
   }
 
-  if (rows.length === 0) {
+  if (rowsWW.length === 0 && rowsV26.length === 0) {
     return (
       <div className="summary-wrap">
         <div className="info-banner">No entries found for <strong>{tabName}</strong>. Select a date that has data.</div>
@@ -218,8 +232,22 @@ export default function SummaryView({
 
   return (
     <div className="summary-wrap summary-wrap-stacked">
+      <div className="summary-metric-tabs">
+        <button
+          className={`summary-metric-tab ${metricTab === "whoWillWin" ? "active" : ""}`}
+          onClick={() => setMetricTab("whoWillWin")}
+        >
+          Who Will Win
+        </button>
+        <button
+          className={`summary-metric-tab ${metricTab === "vote2026" ? "active" : ""}`}
+          onClick={() => setMetricTab("vote2026")}
+        >
+          Vote 2026
+        </button>
+      </div>
       <SummarySection
-        title={showCumulativeBelow ? `Selected range — ${tabName}` : `Summary — ${tabName}`}
+        title={showCumulativeBelow ? `Selected range — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
         rows={rows}
         loading={false}
         showDownload

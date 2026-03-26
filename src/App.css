@@ -410,6 +410,33 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 }
 .summary-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
 .summary-title { font-size: 18px; font-weight: 800; color: var(--primary); font-family: var(--font-headline); }
+.summary-metric-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  background: #eaf0ff;
+  border: 1px solid #cad9ff;
+  border-radius: 999px;
+  padding: 5px;
+}
+.summary-metric-tab {
+  border: none;
+  background: transparent;
+  color: #1e3a8a;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.summary-metric-tab.active {
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+}
 .download-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 18px; background: var(--primary-container); color: #fff; border: none;
