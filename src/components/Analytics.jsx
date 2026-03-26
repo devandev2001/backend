@@ -320,54 +320,49 @@ function HBarChart({ data, color, colors, title, fixedHeight }) {
 function CasteVoteTrendChart({ data, colors }) {
   if (!data.length) return <div className="analytics-empty">No data</div>;
 
-  const grouped = data.reduce((acc, row) => {
+  const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
+  const byCasteYear = data.reduce((acc, row) => {
     const [caste, year] = String(row.label).split(" • ");
     if (!acc[caste]) acc[caste] = {};
     acc[caste][year] = row;
     return acc;
   }, {});
-  const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-  const yearOrder = ["2021", "2024", "2026"];
+
+  const partyPanels = WHO_WIN_ORDER.slice(0, 3).map((party) => ({
+    party,
+    rows: casteOrder.map((caste) => {
+      const y21 = byCasteYear[caste]?.["2021"]?.[party] || 0;
+      const y24 = byCasteYear[caste]?.["2024"]?.[party] || 0;
+      const y26 = byCasteYear[caste]?.["2026"]?.[party] || 0;
+      return { caste, y2021: y21, y2024: y24, y2026: y26 };
+    }),
+  }));
 
   return (
     <div className="analytics-card analytics-card-hero">
-      <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
+      <h3 className="analytics-hero-title">Caste-wise vote trend by party</h3>
       <p className="analytics-hero-sub">
-        Matrix view: caste on rows, years on columns. Each cell is a 100% stacked bar by party share.
+        Party-wise panels side by side for easy comparison. Y-axis is caste; bars show 2021, 2024, 2026 shares.
       </p>
-      <div className="caste-trend-legend">
-        {WHO_WIN_ORDER.map(p => (
-          <span key={p} className="legend-chip">
-            <i style={{ background: colors[p] }} />
-            {p}
-          </span>
-        ))}
-      </div>
-      <div className="caste-matrix-wrap">
-        <div className="caste-matrix-header">
-          <span className="caste-col-head">Caste</span>
-          {yearOrder.map((year) => <span key={year}>{year}</span>)}
-        </div>
-        {casteOrder.map((caste) => (
-          <div className="caste-matrix-row" key={caste}>
-            <div className="caste-matrix-caste">{caste}</div>
-            {yearOrder.map((year) => {
-              const row = grouped[caste]?.[year] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0, weightedTotal: 0 };
-              const leader = WHO_WIN_ORDER.reduce((best, p) => (row[p] > (row[best] || -1) ? p : best), "LDF");
-              return (
-                <div className="caste-matrix-cell" key={`${caste}-${year}`}>
-                  <div className="stack-track" title={`${caste} ${year} (weighted ${row.weightedTotal})`}>
-                    {WHO_WIN_ORDER.map((p) => (
-                      <div key={p} className="stack-seg" style={{ width: `${row[p] || 0}%`, background: colors[p] }} />
-                    ))}
-                  </div>
-                  <div className="cell-meta">
-                    <span className="leader-pill" style={{ color: colors[leader] }}>{leader}</span>
-                    <span className="stack-total">{row.weightedTotal}</span>
-                  </div>
-                </div>
-              );
-            })}
+      <div className="partywise-panel-row">
+        {partyPanels.map(({ party, rows }) => (
+          <div key={party} className="partywise-panel">
+            <div className="partywise-title" style={{ color: colors[party] }}>{party}</div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }} barCategoryGap="22%">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="caste" width={70} tick={{ fontSize: 11, fill: "#1e293b" }} />
+                <Tooltip
+                  formatter={(v) => `${v}%`}
+                  labelFormatter={(label) => `${party} • ${label}`}
+                />
+                <Legend />
+                <Bar dataKey="y2021" name="2021" fill={colors[party]} fillOpacity={0.42} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="y2024" name="2024" fill={colors[party]} fillOpacity={0.68} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="y2026" name="2026" fill={colors[party]} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         ))}
       </div>
