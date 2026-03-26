@@ -319,66 +319,74 @@ function HBarChart({ data, color, colors, title, fixedHeight }) {
 
 function CasteVoteTrendChart({ data, colors }) {
   if (!data.length) return <div className="analytics-empty">No data</div>;
-  const byYear = { "2021": [], "2024": [], "2026": [] };
-  data.forEach((row) => {
+  const grouped = data.reduce((acc, row) => {
     const [caste, year] = String(row.label).split(" • ");
-    if (!byYear[year]) return;
-    byYear[year].push({
-      caste,
-      LDF: row.LDF || 0,
-      UDF: row.UDF || 0,
-      "BJP/NDA": row["BJP/NDA"] || 0,
-      Others: row.Others || 0,
-      weightedTotal: row.weightedTotal || 0,
-    });
-  });
+    if (!acc[caste]) acc[caste] = {};
+    acc[caste][year] = row;
+    return acc;
+  }, {});
   const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-  Object.keys(byYear).forEach((year) => {
-    byYear[year].sort((a, b) => casteOrder.indexOf(a.caste) - casteOrder.indexOf(b.caste));
+  const chartData = casteOrder.map((caste) => {
+    const y21 = grouped[caste]?.["2021"] || {};
+    const y24 = grouped[caste]?.["2024"] || {};
+    const y26 = grouped[caste]?.["2026"] || {};
+    return {
+      caste,
+      "2021_LDF": y21.LDF || 0,
+      "2021_UDF": y21.UDF || 0,
+      "2021_BJP/NDA": y21["BJP/NDA"] || 0,
+      "2021_Others": y21.Others || 0,
+      "2024_LDF": y24.LDF || 0,
+      "2024_UDF": y24.UDF || 0,
+      "2024_BJP/NDA": y24["BJP/NDA"] || 0,
+      "2024_Others": y24.Others || 0,
+      "2026_LDF": y26.LDF || 0,
+      "2026_UDF": y26.UDF || 0,
+      "2026_BJP/NDA": y26["BJP/NDA"] || 0,
+      "2026_Others": y26.Others || 0,
+    };
   });
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) {
-      const d = payload[0].payload;
-      return (
-        <div className="chart-tooltip">
-          <strong>{label}</strong>
-          <div>Weighted total: {d.weightedTotal}</div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const YearPanel = ({ year, rows }) => (
-    <div className="analytics-card" style={{ padding: "14px 14px 10px" }}>
-      <h3 className="analytics-card-title" style={{ marginBottom: 8 }}>Vote {year}</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={rows} margin={{ top: 8, right: 10, left: 2, bottom: 28 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="caste" interval={0} tick={{ fontSize: 10, fill: "#334155" }} angle={-18} textAnchor="end" height={58} />
-          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={40} />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="LDF" stackId="a" fill={colors.LDF} />
-          <Bar dataKey="UDF" stackId="a" fill={colors.UDF} />
-          <Bar dataKey="BJP/NDA" stackId="a" fill={colors["BJP/NDA"]} />
-          <Bar dataKey="Others" stackId="a" fill={colors.Others} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
 
   return (
     <div className="analytics-card analytics-card-hero">
-      <h3 className="analytics-hero-title">Caste-wise voting trend (stacked columns)</h3>
+      <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
       <p className="analytics-hero-sub">
-        X-axis shows caste, stacks show party share. Compare 2021, 2024, 2026 side-by-side.
+        X-axis = caste. For each caste, three side-by-side stacked columns show 2021, 2024, and 2026 party split.
       </p>
-      <div className="analytics-row analytics-row-three" style={{ marginBottom: 0 }}>
-        <YearPanel year="2021" rows={byYear["2021"]} />
-        <YearPanel year="2024" rows={byYear["2024"]} />
-        <YearPanel year="2026" rows={byYear["2026"]} />
+      <div className="caste-trend-legend">
+        <span className="legend-chip"><i style={{ background: "#0f172a" }} />2021</span>
+        <span className="legend-chip"><i style={{ background: "#334155" }} />2024</span>
+        <span className="legend-chip"><i style={{ background: "#64748b" }} />2026</span>
+        {WHO_WIN_ORDER.map((p) => (
+          <span key={p} className="legend-chip">
+            <i style={{ background: colors[p] }} />
+            {p}
+          </span>
+        ))}
       </div>
+      <ResponsiveContainer width="100%" height={520}>
+        <BarChart data={chartData} margin={{ top: 10, right: 18, left: 10, bottom: 64 }} barCategoryGap="28%">
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="caste" interval={0} tick={{ fontSize: 11, fill: "#334155", fontWeight: 700 }} />
+          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={42} />
+          <Tooltip />
+
+          <Bar dataKey="2021_LDF" stackId="y2021" fill={colors.LDF} />
+          <Bar dataKey="2021_UDF" stackId="y2021" fill={colors.UDF} />
+          <Bar dataKey="2021_BJP/NDA" stackId="y2021" fill={colors["BJP/NDA"]} />
+          <Bar dataKey="2021_Others" stackId="y2021" fill={colors.Others} />
+
+          <Bar dataKey="2024_LDF" stackId="y2024" fill={colors.LDF} fillOpacity={0.82} />
+          <Bar dataKey="2024_UDF" stackId="y2024" fill={colors.UDF} fillOpacity={0.82} />
+          <Bar dataKey="2024_BJP/NDA" stackId="y2024" fill={colors["BJP/NDA"]} fillOpacity={0.82} />
+          <Bar dataKey="2024_Others" stackId="y2024" fill={colors.Others} fillOpacity={0.82} />
+
+          <Bar dataKey="2026_LDF" stackId="y2026" fill={colors.LDF} fillOpacity={0.64} />
+          <Bar dataKey="2026_UDF" stackId="y2026" fill={colors.UDF} fillOpacity={0.64} />
+          <Bar dataKey="2026_BJP/NDA" stackId="y2026" fill={colors["BJP/NDA"]} fillOpacity={0.64} />
+          <Bar dataKey="2026_Others" stackId="y2026" fill={colors.Others} fillOpacity={0.64} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
