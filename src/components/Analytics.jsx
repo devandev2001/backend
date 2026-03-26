@@ -319,52 +319,65 @@ function HBarChart({ data, color, colors, title, fixedHeight }) {
 
 function CasteVoteTrendChart({ data, colors }) {
   if (!data.length) return <div className="analytics-empty">No data</div>;
-
-  const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-  const byCasteYear = data.reduce((acc, row) => {
+  const byYear = { "2021": [], "2024": [], "2026": [] };
+  data.forEach((row) => {
     const [caste, year] = String(row.label).split(" • ");
-    if (!acc[caste]) acc[caste] = {};
-    acc[caste][year] = row;
-    return acc;
-  }, {});
+    if (!byYear[year]) return;
+    byYear[year].push({
+      caste,
+      LDF: row.LDF || 0,
+      UDF: row.UDF || 0,
+      "BJP/NDA": row["BJP/NDA"] || 0,
+      Others: row.Others || 0,
+      weightedTotal: row.weightedTotal || 0,
+    });
+  });
+  const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
+  Object.keys(byYear).forEach((year) => {
+    byYear[year].sort((a, b) => casteOrder.indexOf(a.caste) - casteOrder.indexOf(b.caste));
+  });
 
-  const partyPanels = WHO_WIN_ORDER.slice(0, 3).map((party) => ({
-    party,
-    rows: casteOrder.map((caste) => {
-      const y21 = byCasteYear[caste]?.["2021"]?.[party] || 0;
-      const y24 = byCasteYear[caste]?.["2024"]?.[party] || 0;
-      const y26 = byCasteYear[caste]?.["2026"]?.[party] || 0;
-      return { caste, y2021: y21, y2024: y24, y2026: y26 };
-    }),
-  }));
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload?.length) {
+      const d = payload[0].payload;
+      return (
+        <div className="chart-tooltip">
+          <strong>{label}</strong>
+          <div>Weighted total: {d.weightedTotal}</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const YearPanel = ({ year, rows }) => (
+    <div className="analytics-card" style={{ padding: "14px 14px 10px" }}>
+      <h3 className="analytics-card-title" style={{ marginBottom: 8 }}>Vote {year}</h3>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={rows} margin={{ top: 8, right: 10, left: 2, bottom: 28 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="caste" interval={0} tick={{ fontSize: 10, fill: "#334155" }} angle={-18} textAnchor="end" height={58} />
+          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={40} />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="LDF" stackId="a" fill={colors.LDF} />
+          <Bar dataKey="UDF" stackId="a" fill={colors.UDF} />
+          <Bar dataKey="BJP/NDA" stackId="a" fill={colors["BJP/NDA"]} />
+          <Bar dataKey="Others" stackId="a" fill={colors.Others} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 
   return (
     <div className="analytics-card analytics-card-hero">
-      <h3 className="analytics-hero-title">Caste-wise vote trend by party</h3>
+      <h3 className="analytics-hero-title">Caste-wise voting trend (stacked columns)</h3>
       <p className="analytics-hero-sub">
-        Party-wise panels side by side for easy comparison. Y-axis is caste; bars show 2021, 2024, 2026 shares.
+        X-axis shows caste, stacks show party share. Compare 2021, 2024, 2026 side-by-side.
       </p>
-      <div className="partywise-panel-row">
-        {partyPanels.map(({ party, rows }) => (
-          <div key={party} className="partywise-panel">
-            <div className="partywise-title" style={{ color: colors[party] }}>{party}</div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }} barCategoryGap="22%">
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 10 }} />
-                <YAxis type="category" dataKey="caste" width={70} tick={{ fontSize: 11, fill: "#1e293b" }} />
-                <Tooltip
-                  formatter={(v) => `${v}%`}
-                  labelFormatter={(label) => `${party} • ${label}`}
-                />
-                <Legend />
-                <Bar dataKey="y2021" name="2021" fill={colors[party]} fillOpacity={0.42} radius={[0, 4, 4, 0]} />
-                <Bar dataKey="y2024" name="2024" fill={colors[party]} fillOpacity={0.68} radius={[0, 4, 4, 0]} />
-                <Bar dataKey="y2026" name="2026" fill={colors[party]} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ))}
+      <div className="analytics-row analytics-row-three" style={{ marginBottom: 0 }}>
+        <YearPanel year="2021" rows={byYear["2021"]} />
+        <YearPanel year="2024" rows={byYear["2024"]} />
+        <YearPanel year="2026" rows={byYear["2026"]} />
       </div>
     </div>
   );
