@@ -140,24 +140,27 @@ function useAnalyticsData(entries) {
       value: whoTotal > 0 ? +((whoMap[p] / whoTotal) * 100).toFixed(1) : 0,
     }));
 
-    const casteVoteTrend = [];
-    castes.forEach(casteName => {
-      ["vote2021", "vote2024", "vote2026"].forEach(vk => {
-        const yearLabel = vk === "vote2021" ? "2021" : vk === "vote2024" ? "2024" : "2026";
+    const byYear = {};
+    [
+      ["2021", "vote2021"],
+      ["2024", "vote2024"],
+      ["2026", "vote2026"],
+    ].forEach(([label, vk]) => {
+      byYear[label] = castes.map(casteName => {
         const sums = trendMap[casteName][vk];
         const grand = WHO_WIN_ORDER.reduce((s, p) => s + (sums[p] || 0), 0);
-        casteVoteTrend.push({
-          label: `${casteName} • ${yearLabel}`,
+        return {
+          caste: casteName,
           weightedTotal: +grand.toFixed(6),
           LDF: grand > 0 ? +(((sums.LDF || 0) / grand) * 100).toFixed(1) : 0,
           UDF: grand > 0 ? +(((sums.UDF || 0) / grand) * 100).toFixed(1) : 0,
           "BJP/NDA": grand > 0 ? +(((sums["BJP/NDA"] || 0) / grand) * 100).toFixed(1) : 0,
           Others: grand > 0 ? +(((sums.Others || 0) / grand) * 100).toFixed(1) : 0,
-        });
+        };
       });
     });
 
-    return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrend, total };
+    return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrendByYear: byYear, total };
   }, [entries]);
 }
 
@@ -318,14 +321,16 @@ function HBarChart({ data, color, colors, title, fixedHeight }) {
 }
 
 function CasteVoteTrendChart({ data, colors }) {
-  if (!data.length) return <div className="analytics-empty">No data</div>;
+  const [year, setYear] = useState("2026");
+  const chartData = data?.[year] || [];
+  if (!chartData.length) return <div className="analytics-empty">No data</div>;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) {
       const row = payload[0].payload;
       return (
         <div className="chart-tooltip">
-          <strong>{label}</strong>
+          <div><strong>{label}</strong> ({year})</div>
           <div>Weighted total: {row.weightedTotal}</div>
         </div>
       );
@@ -337,13 +342,24 @@ function CasteVoteTrendChart({ data, colors }) {
     <div className="analytics-card analytics-card-hero">
       <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
       <p className="analytics-hero-sub">
-        100% stacked comparison by caste and year, weighted using normalized score.
+        Y-axis is caste. Switch year to compare 2021, 2024, and 2026 vote patterns (weighted).
       </p>
-      <ResponsiveContainer width="100%" height={560}>
-        <BarChart data={data} margin={{ top: 8, right: 18, left: 6, bottom: 8 }}>
+      <div className="trend-year-tabs">
+        {["2021", "2024", "2026"].map(y => (
+          <button
+            key={y}
+            className={`trend-year-tab ${year === y ? "active" : ""}`}
+            onClick={() => setYear(y)}
+          >
+            {y}
+          </button>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={420}>
+        <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 18, left: 18, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#475569" }} interval={0} angle={-18} textAnchor="end" height={85} />
-          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={42} />
+          <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+          <YAxis type="category" dataKey="caste" width={86} tick={{ fontSize: 12, fill: "#1e3a5f" }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           <Bar dataKey="LDF" stackId="a" fill={colors.LDF} />
@@ -375,7 +391,7 @@ export default function Analytics({ entries, loading }) {
     });
   }, [entries, filterAC, filterFA]);
 
-  const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrend, total } = useAnalyticsData(filtered);
+  const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrendByYear, total } = useAnalyticsData(filtered);
 
   const filterLabel = [
     filterAC ? formatAcSelectLabel(filterAC) : "All ACs",
@@ -456,7 +472,7 @@ export default function Analytics({ entries, loading }) {
       </div>
 
       <div className="analytics-row single">
-        <CasteVoteTrendChart data={casteVoteTrend} colors={VOTE_COLORS} />
+        <CasteVoteTrendChart data={casteVoteTrendByYear} colors={VOTE_COLORS} />
       </div>
 
     </div>

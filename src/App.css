@@ -585,6 +585,30 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   margin: 0 0 12px;
   max-width: 720px;
 }
+.trend-year-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #d7e3ff;
+  background: #f3f7ff;
+  margin-bottom: 10px;
+}
+.trend-year-tab {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e3a8a;
+  background: transparent;
+  cursor: pointer;
+}
+.trend-year-tab.active {
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+}
 .analytics-empty { color: var(--outline); font-size: 13px; text-align: center; padding: 24px; }
 .chart-tooltip {
   background: var(--on-surface); color: #fff; padding: 8px 12px; border-radius: 4px;
