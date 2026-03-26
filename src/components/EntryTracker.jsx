@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { ACS, PARTIES, formatAcSelectLabel, getAcNo, sortAcNames } from "../config";
+import { getCasteLabel } from "../demographics";
 
 const DEFAULT_LIMIT = 100;
 
@@ -188,6 +189,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
                 <th className="ac-no-col">AC No.</th>
                 <th>AC</th>
                 <th>FA Name</th>
+                <th>Caste</th>
                 <th>Caste Wt</th>
                 <th>Gender Wt</th>
                 <th>Age Wt</th>
@@ -200,7 +202,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={13} className="no-data">
+                <tr><td colSpan={14} className="no-data">
                   {!entries?.length
                     ? "No rows for this date range (or API returned nothing). Widen From→To, try Cumulative, or check the sheet’s first tab."
                     : (filterAC || filterFA || filterParty)
@@ -215,6 +217,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
                     <td className="ac-no-col num-col">{getAcNo(e.ac) || "—"}</td>
                     <td className="ac-col">{e.ac}</td>
                     <td style={{ fontWeight: 500 }}>{e.faName}</td>
+                    <td>{getCasteLabel(e.ac, e.casteWeight)}</td>
                     <td className="num-col">{parseFloat(e.casteWeight).toFixed(4)}</td>
                     <td className="num-col">{parseFloat(e.genderWeight).toFixed(4)}</td>
                     <td className="num-col">{parseFloat(e.ageWeight).toFixed(4)}</td>
