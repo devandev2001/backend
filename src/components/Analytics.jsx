@@ -50,6 +50,8 @@ function useAnalyticsData(entries) {
 
     entries.forEach(e => {
       const ac = String(e.ac || "").trim();
+      const norm = Number.parseFloat(e.normalizedScore);
+      const weight = Number.isFinite(norm) ? norm : 0;
 
       // Caste
       const casteLabel = getCasteLabel(ac, e.casteWeight);
@@ -73,15 +75,15 @@ function useAnalyticsData(entries) {
       const v24key = VOTE_PARTIES.includes(v24) ? v24 : "Others";
       v24Map[v24key] = (v24Map[v24key] || 0) + 1;
 
-      // Vote 2026 AE
+      // Vote 2026 AE (weighted by normalizedScore)
       const v26 = String(e.vote2026 || "").trim() || "Others";
       const v26key = VOTE_PARTIES.includes(v26) ? v26 : "Others";
-      v26Map[v26key] = (v26Map[v26key] || 0) + 1;
+      v26Map[v26key] = (v26Map[v26key] || 0) + weight;
 
-      // Who will win (2026 prediction)
+      // Who will win (2026 prediction, weighted by normalizedScore)
       const ww = String(e.whoWillWin || "").trim() || "Others";
       const wwKey = WHO_WIN_ORDER.includes(ww) ? ww : "Others";
-      whoMap[wwKey] = (whoMap[wwKey] || 0) + 1;
+      whoMap[wwKey] = (whoMap[wwKey] || 0) + weight;
     });
 
     const total = entries.length;
@@ -107,12 +109,18 @@ function useAnalyticsData(entries) {
       name: p, count: v24Map[p], value: pct(v24Map[p], total),
     }));
 
+    const vote2026Total = Object.values(v26Map).reduce((s, n) => s + n, 0);
     const vote2026 = VOTE_PARTIES.filter(p => v26Map[p]).map(p => ({
-      name: p, count: v26Map[p], value: pct(v26Map[p], total),
+      name: p,
+      count: +v26Map[p].toFixed(6),
+      value: vote2026Total > 0 ? +((v26Map[p] / vote2026Total) * 100).toFixed(1) : 0,
     }));
 
+    const whoTotal = Object.values(whoMap).reduce((s, n) => s + n, 0);
     const whoWillWin = WHO_WIN_ORDER.filter(p => whoMap[p]).map(p => ({
-      name: p, count: whoMap[p], value: pct(whoMap[p], total),
+      name: p,
+      count: +whoMap[p].toFixed(6),
+      value: whoTotal > 0 ? +((whoMap[p] / whoTotal) * 100).toFixed(1) : 0,
     }));
 
     return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total };
@@ -183,7 +191,7 @@ function WhoWillWinHeroChart({ data, colors }) {
       const d = payload[0].payload;
       return (
         <div className="chart-tooltip">
-          <strong>{d.name}</strong>: {d.value}% of responses ({d.count} entries)
+          <strong>{d.name}</strong>: {d.value}% (weighted score {d.count})
         </div>
       );
     }
@@ -194,7 +202,7 @@ function WhoWillWinHeroChart({ data, colors }) {
     <div className="analytics-card analytics-card-hero">
       <h3 className="analytics-hero-title">Who will win — 2026 prediction</h3>
       <p className="analytics-hero-sub">
-        Share of responses by predicted winner for the current filter (vertical bar chart, 0–100% scale).
+        Share by predicted winner using normalized score weights for the current filter (vertical bar chart, 0–100% scale).
       </p>
       <ResponsiveContainer width="100%" height={340}>
         <BarChart
@@ -365,7 +373,7 @@ export default function Analytics({ entries, loading }) {
       </div>
 
       <div className="analytics-row single">
-        <HBarChart data={vote2026} colors={VOTE_COLORS} title="Vote 2026 AE (stated vote)" />
+        <HBarChart data={vote2026} colors={VOTE_COLORS} title="Vote 2026 AE (weighted by normalized score)" />
       </div>
     </div>
   );
