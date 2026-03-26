@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { getAcNo, sortAcNames } from "../config";
 
-const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
-const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c", Others: "#6b7280" };
+const PARTIES = ["LDF", "UDF", "BJP/NDA"];
+const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c" };
 
 function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
@@ -50,7 +50,6 @@ function calcSummary(entries, partyField = "whoWillWin") {
       ldf:    pct["LDF"].toFixed(2) + "%",
       udf:    pct["UDF"].toFixed(2) + "%",
       bjp:    pct["BJP/NDA"].toFixed(2) + "%",
-      others: pct["Others"].toFixed(2) + "%",
       winner,
     };
   });
@@ -99,7 +98,6 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
               <th className="ldf-col">LDF %</th>
               <th className="udf-col">UDF %</th>
               <th className="bjp-col">BJP/NDA %</th>
-              <th className="oth-col">Others %</th>
               <th>Predicted Winner</th>
             </tr>
           </thead>
@@ -112,7 +110,6 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
                 <td className="num-col ldf-val">{row.ldf}</td>
                 <td className="num-col udf-val">{row.udf}</td>
                 <td className="num-col bjp-val">{row.bjp}</td>
-                <td className="num-col oth-val">{row.others}</td>
                 <td>
                   <span className="winner-badge" style={{ background: partyColor[row.winner] || "#1d4ed8" }}>
                     {row.winner}
@@ -131,7 +128,6 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
             { party: "LDF",     pct: parseFloat(row.ldf),    color: "#dc2626" },
             { party: "UDF",     pct: parseFloat(row.udf),    color: "#2563eb" },
             { party: "BJP/NDA", pct: parseFloat(row.bjp),    color: "#ea580c" },
-            { party: "Others",  pct: parseFloat(row.others), color: "#6b7280" },
           ];
           return (
             <div key={i} className="bar-row">
@@ -177,23 +173,23 @@ export default function SummaryView({
   function downloadExcel(includeCumulativeSheet) {
     const wb = XLSX.utils.book_new();
 
-    const summaryHeaders = [["AC No.","Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Others %","Predicted Winner"]];
-    const summaryRowsWW = rowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
-    const summaryRowsV26 = rowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+    const summaryHeaders = [["AC No.","Assembly Constituency","Total Entries","LDF %","UDF %","BJP/NDA %","Predicted Winner"]];
+    const summaryRowsWW = rowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
+    const summaryRowsV26 = rowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
     const wsWW = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRowsWW]);
     const wsV26 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...summaryRowsV26]);
-    wsWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
-    wsV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+    wsWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
+    wsV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
     XLSX.utils.book_append_sheet(wb, wsWW, "WW Summary");
     XLSX.utils.book_append_sheet(wb, wsV26, "Vote26 Summary");
 
     if (includeCumulativeSheet && (cumRowsWW.length > 0 || cumRowsV26.length > 0)) {
-      const cumWW = cumRowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
-      const cumV26 = cumRowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.others, r.winner]);
+      const cumWW = cumRowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
+      const cumV26 = cumRowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
       const wsCWW = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumWW]);
       const wsCV26 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumV26]);
-      wsCWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
-      wsCV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:18}];
+      wsCWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
+      wsCV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
       XLSX.utils.book_append_sheet(wb, wsCWW, "WW Cumulative");
       XLSX.utils.book_append_sheet(wb, wsCV26, "Vote26 Cumulative");
     }
@@ -246,26 +242,25 @@ export default function SummaryView({
           Vote 2026
         </button>
       </div>
-      <SummarySection
-        title={showCumulativeBelow ? `Selected range — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
-        rows={rows}
-        loading={false}
-        showDownload
-        onDownload={() => downloadExcel(showCumulativeBelow)}
-        downloadDisabled={rows.length === 0 || loading}
-      />
+      <div className={`summary-compare-grid ${showCumulativeBelow ? "two-cols" : ""}`}>
+        <SummarySection
+          title={showCumulativeBelow ? `Selected / Today — ${tabName} — ${metricTitle}` : `Summary — ${tabName} — ${metricTitle}`}
+          rows={rows}
+          loading={false}
+          showDownload
+          onDownload={() => downloadExcel(showCumulativeBelow)}
+          downloadDisabled={rows.length === 0 || loading}
+        />
 
-      {showCumulativeBelow && (
-        <>
-          <div className="summary-section-divider" />
+        {showCumulativeBelow && (
           <SummarySection
-            title="Cumulative — all dates"
+            title={`Cumulative — all dates — ${metricTitle}`}
             rows={cumRows}
             loading={!!cumulativeLoading}
             showDownload={false}
           />
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

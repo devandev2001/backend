@@ -402,6 +402,15 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .summary-wrap { background: var(--surface-bright); border-radius: 6px; padding: 22px; box-shadow: var(--shadow-tonal); }
 .summary-wrap-stacked { padding-bottom: 28px; }
 .summary-section-block { margin-bottom: 4px; }
+.summary-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.summary-compare-grid.two-cols {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
 .summary-section-divider {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--outline-variant), transparent);
@@ -477,7 +486,6 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .summary-table-centered .ldf-val { color: #991b1b !important; font-weight: 800 !important; }
 .summary-table-centered .udf-val { color: #1e40af !important; font-weight: 800 !important; }
 .summary-table-centered .bjp-val { color: #c2410c !important; font-weight: 800 !important; }
-.summary-table-centered .oth-val { color: #334155 !important; font-weight: 800 !important; }
 .summary-table-centered .winner-badge {
   font-size: 12px;
   font-weight: 800;
@@ -554,6 +562,7 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   background: var(--on-surface); color: #fff; padding: 8px 12px; border-radius: 4px;
   font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
+@media (max-width: 1100px) { .summary-compare-grid.two-cols { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .analytics-row { grid-template-columns: 1fr; } }
 
 /* ── Messages ── */
