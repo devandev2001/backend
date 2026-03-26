@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import * as XLSX from "xlsx";
 import { getAcNo, sortAcNames } from "../config";
 
@@ -58,7 +58,7 @@ function calcSummary(entries, partyField = "whoWillWin") {
   });
 }
 
-function SummarySection({ title, rows, loading, showDownload, onDownload, downloadDisabled }) {
+function SummarySection({ title, rows, loading, showDownload, onDownload, downloadDisabled, onAcClick }) {
   if (loading) {
     return (
       <div className="summary-section-block">
@@ -108,7 +108,13 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
             {rows.map((row, i) => (
               <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                 <td className="ac-no-col num-col">{getAcNo(row.ac) || "—"}</td>
-                <td className="ac-col">{row.ac}</td>
+                <td className="ac-col">
+                  {onAcClick ? (
+                    <button className="ac-link-btn" onClick={() => onAcClick(row.ac)}>{row.ac}</button>
+                  ) : (
+                    row.ac
+                  )}
+                </td>
                 <td className="num-col">{row.totalEntries}</td>
                 <td className="num-col ldf-val">{row.ldf}</td>
                 <td className="num-col udf-val">{row.udf}</td>
@@ -134,15 +140,12 @@ export default function SummaryView({
   entries,
   cumulativeEntries,
   cumulativeLoading,
+  onAcClick,
 }) {
-  const [metricTab, setMetricTab] = useState("whoWillWin");
   const rowsWW = useMemo(() => calcSummary(entries, "whoWillWin"), [entries]);
   const rowsV26 = useMemo(() => calcSummary(entries, "vote2026"), [entries]);
   const cumRowsWW = useMemo(() => calcSummary(cumulativeEntries || [], "whoWillWin"), [cumulativeEntries]);
   const cumRowsV26 = useMemo(() => calcSummary(cumulativeEntries || [], "vote2026"), [cumulativeEntries]);
-  const rows = metricTab === "whoWillWin" ? rowsWW : rowsV26;
-  const cumRows = metricTab === "whoWillWin" ? cumRowsWW : cumRowsV26;
-  const metricTitle = metricTab === "whoWillWin" ? "Who Will Win (weighted)" : "Vote 2026 (weighted)";
 
   const showCumulativeBelow = cumulativeEntries != null;
 
@@ -204,56 +207,76 @@ export default function SummaryView({
 
   return (
     <div className="summary-wrap summary-wrap-stacked">
-      <div className="summary-metric-tabs">
-        <button
-          className={`summary-metric-tab ${metricTab === "whoWillWin" ? "active" : ""}`}
-          onClick={() => setMetricTab("whoWillWin")}
-        >
-          Who Will Win
-        </button>
-        <button
-          className={`summary-metric-tab ${metricTab === "vote2026" ? "active" : ""}`}
-          onClick={() => setMetricTab("vote2026")}
-        >
-          Vote 2026
-        </button>
-      </div>
       {showCumulativeBelow && (
-        <div className="summary-compare-grid two-cols">
-          <div className="summary-col summary-col-selected">
+        <>
+          <div className="summary-group-title">Selected / Today — {tabName}</div>
+          <div className="summary-compare-grid two-cols metric-compare-grid">
             <SummarySection
-              title={`Selected / Today — ${tabName} — ${metricTitle}`}
-              rows={rows}
+              title="Who Will Win (weighted)"
+              rows={rowsWW}
               loading={false}
               showDownload
               onDownload={() => downloadExcel(showCumulativeBelow)}
-              downloadDisabled={rows.length === 0 || loading}
+              downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+              onAcClick={onAcClick}
+            />
+            <SummarySection
+              title="Who Will You Vote For (2026 weighted)"
+              rows={rowsV26}
+              loading={false}
+              showDownload
+              onDownload={() => downloadExcel(showCumulativeBelow)}
+              downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+              onAcClick={onAcClick}
             />
           </div>
-          <div className="summary-col summary-col-cumulative">
+
+          <div className="summary-section-divider" />
+          <div className="summary-group-title">Cumulative — all dates</div>
+          <div className="summary-compare-grid two-cols metric-compare-grid">
             <SummarySection
-              title={`Cumulative — all dates — ${metricTitle}`}
-              rows={cumRows}
+              title="Who Will Win (weighted)"
+              rows={cumRowsWW}
               loading={!!cumulativeLoading}
               showDownload
               onDownload={() => downloadExcel(true)}
-              downloadDisabled={cumRows.length === 0 || !!cumulativeLoading}
+              downloadDisabled={(cumRowsWW.length === 0 && cumRowsV26.length === 0) || !!cumulativeLoading}
+              onAcClick={onAcClick}
+            />
+            <SummarySection
+              title="Who Will You Vote For (2026 weighted)"
+              rows={cumRowsV26}
+              loading={!!cumulativeLoading}
+              showDownload
+              onDownload={() => downloadExcel(true)}
+              downloadDisabled={(cumRowsWW.length === 0 && cumRowsV26.length === 0) || !!cumulativeLoading}
+              onAcClick={onAcClick}
             />
           </div>
-        </div>
+        </>
       )}
 
       {!showCumulativeBelow && (
-        <>
+        <div className="summary-compare-grid two-cols metric-compare-grid">
           <SummarySection
-            title={`Summary — ${tabName} — ${metricTitle}`}
-            rows={rows}
+            title={`Summary — ${tabName} — Who Will Win (weighted)`}
+            rows={rowsWW}
             loading={false}
             showDownload
             onDownload={() => downloadExcel(showCumulativeBelow)}
-            downloadDisabled={rows.length === 0 || loading}
+            downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+            onAcClick={onAcClick}
           />
-        </>
+          <SummarySection
+            title={`Summary — ${tabName} — Who Will You Vote For (2026 weighted)`}
+            rows={rowsV26}
+            loading={false}
+            showDownload
+            onDownload={() => downloadExcel(showCumulativeBelow)}
+            downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+            onAcClick={onAcClick}
+          />
+        </div>
       )}
     </div>
   );

@@ -402,6 +402,13 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .summary-wrap { background: var(--surface-bright); border-radius: 6px; padding: 22px; box-shadow: var(--shadow-tonal); }
 .summary-wrap-stacked { padding-bottom: 28px; }
 .summary-section-block { margin-bottom: 4px; }
+.summary-group-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin: 4px 0 10px;
+  letter-spacing: 0.03em;
+}
 .summary-compare-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -430,6 +437,12 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 }
 .summary-col-selected .summary-title::before { background: #2563eb; }
 .summary-col-cumulative .summary-title::before { background: #7c3aed; }
+.metric-compare-grid .summary-section-block {
+  border: 1px solid #d7e3ff;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbff;
+}
 .summary-section-divider {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--outline-variant), transparent);
@@ -503,6 +516,17 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   color: #0c2461;
   text-align: center !important;
 }
+.ac-link-btn {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font: inherit;
+}
+.ac-link-btn:hover { color: #1e40af; }
 .summary-table-centered .num-col {
   text-align: center !important;
   font-size: 14px;
@@ -589,21 +613,6 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .chart-tooltip {
   background: var(--on-surface); color: #fff; padding: 8px 12px; border-radius: 4px;
   font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.caste-year-hint {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.caste-year-hint span {
-  font-size: 11px;
-  font-weight: 700;
-  color: #334155;
-  background: #eef2ff;
-  border: 1px solid #dbeafe;
-  border-radius: 999px;
-  padding: 4px 10px;
 }
 .caste-trend-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .legend-chip {

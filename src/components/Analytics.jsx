@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList,
@@ -327,60 +327,63 @@ function CasteVoteTrendChart({ data, colors }) {
     return acc;
   }, {});
   const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-  const chartData = casteOrder.map((caste) => {
-    const y21 = grouped[caste]?.["2021"] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 };
-    const y24 = grouped[caste]?.["2024"] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 };
-    const y26 = grouped[caste]?.["2026"] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 };
-    return {
-      caste,
-      y21LDF: y21.LDF, y21UDF: y21.UDF, y21BJP: y21["BJP/NDA"], y21OTH: y21.Others,
-      y24LDF: y24.LDF, y24UDF: y24.UDF, y24BJP: y24["BJP/NDA"], y24OTH: y24.Others,
-      y26LDF: y26.LDF, y26UDF: y26.UDF, y26BJP: y26["BJP/NDA"], y26OTH: y26.Others,
-    };
-  });
+  const yearOrder = ["2021", "2024", "2026"];
 
   return (
     <div className="analytics-card analytics-card-hero">
       <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
       <p className="analytics-hero-sub">
-        X-axis = caste. For each caste, three side-by-side mini columns represent 2021, 2024, and 2026.
+        Y-axis = caste. Each caste has 3 compact stacked bars (2021, 2024, 2026) showing party share.
       </p>
-      <div className="caste-year-hint">
-        <span>Left mini-column: 2021</span>
-        <span>Middle: 2024</span>
-        <span>Right: 2026</span>
+      <div className="caste-trend-legend">
+        {WHO_WIN_ORDER.map(p => (
+          <span key={p} className="legend-chip">
+            <i style={{ background: colors[p] }} />
+            {p}
+          </span>
+        ))}
       </div>
-      <ResponsiveContainer width="100%" height={560}>
-        <BarChart data={chartData} margin={{ top: 18, right: 20, left: 8, bottom: 24 }} barGap={2} barCategoryGap="24%">
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="caste" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 700 }} tickLine={false} />
-          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={42} />
-          <Tooltip />
-          <Legend />
-
-          <Bar dataKey="y21LDF" stackId="y2021" fill={colors.LDF} name="2021 • LDF" />
-          <Bar dataKey="y21UDF" stackId="y2021" fill={colors.UDF} name="2021 • UDF" />
-          <Bar dataKey="y21BJP" stackId="y2021" fill={colors["BJP/NDA"]} name="2021 • BJP/NDA" />
-          <Bar dataKey="y21OTH" stackId="y2021" fill={colors.Others} name="2021 • Others" />
-
-          <Bar dataKey="y24LDF" stackId="y2024" fill={colors.LDF} name="2024 • LDF" fillOpacity={0.82} />
-          <Bar dataKey="y24UDF" stackId="y2024" fill={colors.UDF} name="2024 • UDF" fillOpacity={0.82} />
-          <Bar dataKey="y24BJP" stackId="y2024" fill={colors["BJP/NDA"]} name="2024 • BJP/NDA" fillOpacity={0.82} />
-          <Bar dataKey="y24OTH" stackId="y2024" fill={colors.Others} name="2024 • Others" fillOpacity={0.82} />
-
-          <Bar dataKey="y26LDF" stackId="y2026" fill={colors.LDF} name="2026 • LDF" fillOpacity={0.64} />
-          <Bar dataKey="y26UDF" stackId="y2026" fill={colors.UDF} name="2026 • UDF" fillOpacity={0.64} />
-          <Bar dataKey="y26BJP" stackId="y2026" fill={colors["BJP/NDA"]} name="2026 • BJP/NDA" fillOpacity={0.64} />
-          <Bar dataKey="y26OTH" stackId="y2026" fill={colors.Others} name="2026 • Others" fillOpacity={0.64} />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="caste-trend-grid">
+        {casteOrder.map((caste) => (
+          <div className="caste-trend-row" key={caste}>
+            <div className="caste-trend-y">{caste}</div>
+            <div className="caste-trend-bars">
+              {yearOrder.map((year) => {
+                const row = grouped[caste]?.[year] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0, weightedTotal: 0 };
+                return (
+                  <div className="year-stack-row" key={`${caste}-${year}`}>
+                    <span className="year-badge">{year}</span>
+                    <div className="stack-track" title={`${caste} ${year} (weighted ${row.weightedTotal})`}>
+                      {WHO_WIN_ORDER.map((p) => (
+                        <div
+                          key={p}
+                          className="stack-seg"
+                          style={{ width: `${row[p] || 0}%`, background: colors[p] }}
+                        />
+                      ))}
+                    </div>
+                    <span className="stack-total">{row.weightedTotal}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default function Analytics({ entries, loading }) {
+export default function Analytics({ entries, loading, selectedAC = "", onSelectedACChange }) {
   const [filterAC, setFilterAC] = useState("");
   const [filterFA, setFilterFA] = useState("");
+
+  useEffect(() => {
+    if (selectedAC && selectedAC !== filterAC) {
+      setFilterAC(selectedAC);
+      setFilterFA("");
+    }
+  }, [selectedAC]);
 
   const faNames = useMemo(() => {
     if (!entries) return [];
@@ -420,7 +423,12 @@ export default function Analytics({ entries, loading }) {
         <div className="filter-group">
           <label className="filter-label">Assembly Constituency</label>
           <select className="filter-select" value={filterAC}
-            onChange={e => { setFilterAC(e.target.value); setFilterFA(""); }}>
+            onChange={e => {
+              const v = e.target.value;
+              setFilterAC(v);
+              setFilterFA("");
+              if (onSelectedACChange) onSelectedACChange(v);
+            }}>
             <option value="">All ACs</option>
             {sortAcNames(ACS).map(ac => (
               <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
@@ -437,7 +445,11 @@ export default function Analytics({ entries, loading }) {
         </div>
         {(filterAC || filterFA) && (
           <button className="clear-btn" style={{ alignSelf: "flex-end" }}
-            onClick={() => { setFilterAC(""); setFilterFA(""); }}>
+            onClick={() => {
+              setFilterAC("");
+              setFilterFA("");
+              if (onSelectedACChange) onSelectedACChange("");
+            }}>
             ✕ Clear
           </button>
         )}

@@ -30,6 +30,7 @@ export default function App() {
   const [tab, setTab]             = useState("entries");
   const [cumulative, setCumulative] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [analyticsAC, setAnalyticsAC] = useState("");
 
   // Date range — defaults to today
   const [fromDate, setFromDate] = useState(today);
@@ -246,12 +247,18 @@ export default function App() {
                   entries={entries}
                   cumulativeEntries={!cumulative ? cumul.entries : null}
                   cumulativeLoading={cumul.loading}
+                  onAcClick={(ac) => {
+                    setAnalyticsAC(ac);
+                    setTab("analytics");
+                  }}
                 />
               )}
               {tab === "analytics" && entries.length > 0 && (
                 <Analytics
                   entries={entries}
                   loading={entriesLoading}
+                  selectedAC={analyticsAC}
+                  onSelectedACChange={setAnalyticsAC}
                 />
               )}
             </>
