@@ -333,7 +333,7 @@ function CasteVoteTrendChart({ data, colors }) {
     <div className="analytics-card analytics-card-hero">
       <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
       <p className="analytics-hero-sub">
-        Y-axis = caste. Each caste has 3 compact stacked bars (2021, 2024, 2026) showing party share.
+        Matrix view: caste on rows, years on columns. Each cell is a 100% stacked bar by party share.
       </p>
       <div className="caste-trend-legend">
         {WHO_WIN_ORDER.map(p => (
@@ -343,30 +343,31 @@ function CasteVoteTrendChart({ data, colors }) {
           </span>
         ))}
       </div>
-      <div className="caste-trend-grid">
+      <div className="caste-matrix-wrap">
+        <div className="caste-matrix-header">
+          <span className="caste-col-head">Caste</span>
+          {yearOrder.map((year) => <span key={year}>{year}</span>)}
+        </div>
         {casteOrder.map((caste) => (
-          <div className="caste-trend-row" key={caste}>
-            <div className="caste-trend-y">{caste}</div>
-            <div className="caste-trend-bars">
-              {yearOrder.map((year) => {
-                const row = grouped[caste]?.[year] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0, weightedTotal: 0 };
-                return (
-                  <div className="year-stack-row" key={`${caste}-${year}`}>
-                    <span className="year-badge">{year}</span>
-                    <div className="stack-track" title={`${caste} ${year} (weighted ${row.weightedTotal})`}>
-                      {WHO_WIN_ORDER.map((p) => (
-                        <div
-                          key={p}
-                          className="stack-seg"
-                          style={{ width: `${row[p] || 0}%`, background: colors[p] }}
-                        />
-                      ))}
-                    </div>
+          <div className="caste-matrix-row" key={caste}>
+            <div className="caste-matrix-caste">{caste}</div>
+            {yearOrder.map((year) => {
+              const row = grouped[caste]?.[year] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0, weightedTotal: 0 };
+              const leader = WHO_WIN_ORDER.reduce((best, p) => (row[p] > (row[best] || -1) ? p : best), "LDF");
+              return (
+                <div className="caste-matrix-cell" key={`${caste}-${year}`}>
+                  <div className="stack-track" title={`${caste} ${year} (weighted ${row.weightedTotal})`}>
+                    {WHO_WIN_ORDER.map((p) => (
+                      <div key={p} className="stack-seg" style={{ width: `${row[p] || 0}%`, background: colors[p] }} />
+                    ))}
+                  </div>
+                  <div className="cell-meta">
+                    <span className="leader-pill" style={{ color: colors[leader] }}>{leader}</span>
                     <span className="stack-total">{row.weightedTotal}</span>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
