@@ -590,23 +590,32 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   background: var(--on-surface); color: #fff; padding: 8px 12px; border-radius: 4px;
   font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-.partywise-panel-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.partywise-panel {
-  border: 1px solid #dbe4ff;
-  border-radius: 10px;
-  background: #fbfdff;
-  padding: 8px 10px 6px;
+.caste-trend-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.legend-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+  color: #1e293b; background: #eef2ff; border: 1px solid #dbeafe; border-radius: 999px; padding: 4px 10px;
 }
-.partywise-title {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin: 2px 0 8px;
+.legend-chip i { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+.caste-trend-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.caste-chart-card {
+  border: 1px solid #dbe4ff;
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 10px 10px 6px;
+}
+.caste-chart-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 4px;
 }
 @media (max-width: 1100px) { .summary-compare-grid.two-cols { grid-template-columns: 1fr; } }
 @media (max-width: 1100px) { .analytics-row-three { grid-template-columns: 1fr; } }
-@media (max-width: 1200px) { .partywise-panel-row { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .caste-trend-card-grid { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .analytics-row { grid-template-columns: 1fr; } }
 
 /* ── Messages ── */
