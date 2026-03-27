@@ -1,5 +1,14 @@
 const partyColors = { LDF: "#dc2626", UDF: "#1d4ed8", "BJP/NDA": "#ea580c", Others: "#6b7280" };
 
+function normalizeParty(rawParty) {
+  const p = String(rawParty || "").trim().toUpperCase().replace(/\s+/g, "");
+  if (!p) return "Others";
+  if (p === "LDF") return "LDF";
+  if (p === "UDF") return "UDF";
+  if (p === "BJP/NDA" || p === "BJP-NDA" || p === "BJP" || p === "NDA" || p === "BJPNDA") return "BJP/NDA";
+  return "Others";
+}
+
 export default function QuickStats({ entries }) {
   if (!entries || entries.length === 0) {
     return (
@@ -18,7 +27,7 @@ export default function QuickStats({ entries }) {
 
   const partySums = { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 };
   entries.forEach(e => {
-    const p = e.whoWillWin;
+    const p = normalizeParty(e.whoWillWin);
     if (partySums[p] !== undefined) partySums[p] += parseFloat(e.normalizedScore) || 0;
   });
   const leading = Object.entries(partySums).sort((a, b) => b[1] - a[1])[0];

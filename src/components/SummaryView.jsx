@@ -1,55 +1,84 @@
 import { useMemo } from "react";
 import * as XLSX from "xlsx";
-import { getAcNo, sortAcNames } from "../config";
+import { ACS, getAcNo, sortAcNames } from "../config";
 
 const PARTIES = ["LDF", "UDF", "BJP/NDA"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c" };
+
+const AC_NAME_BY_KEY = ACS.reduce((acc, name) => {
+  const key = String(name).toLowerCase().replace(/[^a-z0-9]/g, "");
+  acc[key] = name;
+  return acc;
+}, {});
+
+function normalizeAcName(rawAc) {
+  const input = String(rawAc || "").trim();
+  if (!input) return "";
+  const key = input.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const aliasKey = key === "kattakada" ? "kattakkada" : key === "kowalam" ? "kovalam" : key;
+  return AC_NAME_BY_KEY[aliasKey] || input;
+}
+
+function normalizeParty(rawParty) {
+  const p = String(rawParty || "").trim().toUpperCase().replace(/\s+/g, "");
+  if (!p) return "Others";
+  if (p === "LDF") return "LDF";
+  if (p === "UDF") return "UDF";
+  if (p === "BJP/NDA" || p === "BJP-NDA" || p === "BJP" || p === "NDA" || p === "BJPNDA") return "BJP/NDA";
+  return "Others";
+}
 
 function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
 
   const acMap = {};
   entries.forEach(e => {
-    const ac = String(e.ac || "").trim();
+    const ac = normalizeAcName(e.ac);
     const acKey = ac.toLowerCase();
     // Hide blank rows and requested AC exclusions.
     if (!ac || acKey === "kovalam" || acKey === "kowalam") return;
-    const party = String(e[partyField]).trim();
+    const party = normalizeParty(e[partyField]);
     const score = parseFloat(e.normalizedScore) || 0;
     if (!acMap[ac]) {
-      acMap[ac] = {};
-      PARTIES.forEach(p => { acMap[ac][p] = { sum: 0, count: 0 }; });
+      acMap[ac] = { totalRows: 0, othersSum: 0, parties: {} };
+      PARTIES.forEach(p => { acMap[ac].parties[p] = { sum: 0, count: 0 }; });
     }
-    if (acMap[ac][party]) {
-      acMap[ac][party].sum += score;
-      acMap[ac][party].count += 1;
+    acMap[ac].totalRows += 1;
+    if (party === "Others") {
+      acMap[ac].othersSum += score;
+    } else if (acMap[ac].parties[party]) {
+      acMap[ac].parties[party].sum += score;
+      acMap[ac].parties[party].count += 1;
     }
   });
 
   return sortAcNames(Object.keys(acMap)).map(ac => {
-    const partyData = acMap[ac];
-    let totalEntries = 0;
-    let grandTotal = 0;
+    const acData = acMap[ac];
+    const partyData = acData.parties;
+    let countedEntries = 0;
+    let recognizedTotal = 0;
     const partySums = {};
 
     PARTIES.forEach(p => {
-      totalEntries += partyData[p].count;
+      countedEntries += partyData[p].count;
       partySums[p] = partyData[p].sum;
-      grandTotal += partyData[p].sum;
+      recognizedTotal += partyData[p].sum;
     });
+    const grandTotal = recognizedTotal + acData.othersSum;
 
     const pct = {};
-    let winner = "-";
-    let maxPct = -1;
+    let winner = "No data";
+    let maxSum = 0;
 
     PARTIES.forEach(p => {
       pct[p] = grandTotal > 0 ? (partySums[p] / grandTotal) * 100 : 0;
-      if (pct[p] > maxPct) { maxPct = pct[p]; winner = p; }
+      if (partySums[p] > maxSum) { maxSum = partySums[p]; winner = p; }
     });
 
     return {
       ac,
-      totalEntries,
+      totalEntries: acData.totalRows,
+      countedEntries,
       ldf:    pct["LDF"].toFixed(2) + "%",
       udf:    pct["UDF"].toFixed(2) + "%",
       bjp:    pct["BJP/NDA"].toFixed(2) + "%",
@@ -128,6 +157,9 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="table-footnote" style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+        Percentages use total weighted score including rows marked as Others/blank party.
       </div>
 
     </div>
