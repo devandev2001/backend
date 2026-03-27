@@ -172,10 +172,6 @@ export default function SummaryView({
 }) {
   const rowsWW = useMemo(() => calcSummary(entries, "whoWillWin"), [entries]);
   const rowsV26 = useMemo(() => calcSummary(entries, "vote2026"), [entries]);
-  const cumRowsWW = useMemo(() => calcSummary(cumulativeEntries || [], "whoWillWin"), [cumulativeEntries]);
-  const cumRowsV26 = useMemo(() => calcSummary(cumulativeEntries || [], "vote2026"), [cumulativeEntries]);
-
-  const showCumulativeBelow = cumulativeEntries != null;
 
   function downloadExcel(includeCumulativeSheet) {
     const wb = XLSX.utils.book_new();
@@ -190,16 +186,7 @@ export default function SummaryView({
     XLSX.utils.book_append_sheet(wb, wsWW, "WW Summary");
     XLSX.utils.book_append_sheet(wb, wsV26, "Vote26 Summary");
 
-    if (includeCumulativeSheet && (cumRowsWW.length > 0 || cumRowsV26.length > 0)) {
-      const cumWW = cumRowsWW.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
-      const cumV26 = cumRowsV26.map(r => [getAcNo(r.ac) || "", r.ac, r.totalEntries, r.ldf, r.udf, r.bjp, r.winner]);
-      const wsCWW = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumWW]);
-      const wsCV26 = XLSX.utils.aoa_to_sheet([...summaryHeaders, ...cumV26]);
-      wsCWW["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
-      wsCV26["!cols"] = [{wch:8},{wch:24},{wch:14},{wch:10},{wch:10},{wch:12},{wch:18}];
-      XLSX.utils.book_append_sheet(wb, wsCWW, "WW Cumulative");
-      XLSX.utils.book_append_sheet(wb, wsCV26, "Vote26 Cumulative");
-    }
+    // Keep export focused on currently visible summary.
 
     if (entries && entries.length > 0) {
       const entryHeaders = [["Timestamp","AC No.","AC","FA Name","Caste Weight","Gender Weight","Age Weight",
@@ -235,77 +222,26 @@ export default function SummaryView({
 
   return (
     <div className="summary-wrap summary-wrap-stacked">
-      {showCumulativeBelow && (
-        <>
-          <div className="summary-group-title">Selected / Today — {tabName}</div>
-          <div className="summary-compare-grid two-cols metric-compare-grid">
-            <SummarySection
-              title="Who Will You Vote For (2026 weighted)"
-              rows={rowsV26}
-              loading={false}
-              showDownload
-              onDownload={() => downloadExcel(showCumulativeBelow)}
-              downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
-              onAcClick={onAcClick}
-            />
-            <SummarySection
-              title="Who Will Win (weighted)"
-              rows={rowsWW}
-              loading={false}
-              showDownload
-              onDownload={() => downloadExcel(showCumulativeBelow)}
-              downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
-              onAcClick={onAcClick}
-            />
-          </div>
-
-          <div className="summary-section-divider" />
-          <div className="summary-group-title">Cumulative — all dates</div>
-          <div className="summary-compare-grid two-cols metric-compare-grid">
-            <SummarySection
-              title="Who Will You Vote For (2026 weighted)"
-              rows={cumRowsV26}
-              loading={!!cumulativeLoading}
-              showDownload
-              onDownload={() => downloadExcel(true)}
-              downloadDisabled={(cumRowsWW.length === 0 && cumRowsV26.length === 0) || !!cumulativeLoading}
-              onAcClick={onAcClick}
-            />
-            <SummarySection
-              title="Who Will Win (weighted)"
-              rows={cumRowsWW}
-              loading={!!cumulativeLoading}
-              showDownload
-              onDownload={() => downloadExcel(true)}
-              downloadDisabled={(cumRowsWW.length === 0 && cumRowsV26.length === 0) || !!cumulativeLoading}
-              onAcClick={onAcClick}
-            />
-          </div>
-        </>
-      )}
-
-      {!showCumulativeBelow && (
-        <div className="summary-compare-grid two-cols metric-compare-grid">
-          <SummarySection
-            title={`Summary — ${tabName} — Who Will You Vote For (2026 weighted)`}
-            rows={rowsV26}
-            loading={false}
-            showDownload
-            onDownload={() => downloadExcel(showCumulativeBelow)}
-            downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
-            onAcClick={onAcClick}
-          />
-          <SummarySection
-            title={`Summary — ${tabName} — Who Will Win (weighted)`}
-            rows={rowsWW}
-            loading={false}
-            showDownload
-            onDownload={() => downloadExcel(showCumulativeBelow)}
-            downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
-            onAcClick={onAcClick}
-          />
-        </div>
-      )}
+      <div className="summary-compare-grid two-cols metric-compare-grid">
+        <SummarySection
+          title={`Summary — ${tabName} — Who Will You Vote For (2026 weighted)`}
+          rows={rowsV26}
+          loading={false}
+          showDownload
+          onDownload={() => downloadExcel(false)}
+          downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+          onAcClick={onAcClick}
+        />
+        <SummarySection
+          title={`Summary — ${tabName} — Who Will Win (weighted)`}
+          rows={rowsWW}
+          loading={false}
+          showDownload
+          onDownload={() => downloadExcel(false)}
+          downloadDisabled={(rowsWW.length === 0 && rowsV26.length === 0) || loading}
+          onAcClick={onAcClick}
+        />
+      </div>
     </div>
   );
 }
