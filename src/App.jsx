@@ -40,7 +40,8 @@ export default function App() {
     cumulative ? null : fromDate,
     cumulative ? null : toDate
   );
-  const cumul = useCumulativeEntries();
+  const shouldLoadCumulative = cumulative || tab === "summary";
+  const cumul = useCumulativeEntries(shouldLoadCumulative);
 
   const active         = cumulative ? cumul  : range;
   const entriesLoading = active.loading;

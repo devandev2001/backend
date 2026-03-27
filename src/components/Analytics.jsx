@@ -37,7 +37,7 @@ function useAnalyticsData(entries) {
     if (!entries || entries.length === 0) {
       return {
         caste: [], gender: [], age: [], vote2021: [], vote2024: [], vote2026: [], whoWillWin: [],
-        casteVoteTrend: [], total: 0,
+        total: 0,
       };
     }
 
@@ -48,16 +48,6 @@ function useAnalyticsData(entries) {
     const v24Map = {};
     const v26Map = {};
     const whoMap = {};
-    const castes = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-    const trendMap = {};
-    castes.forEach(c => {
-      trendMap[c] = {
-        vote2021: { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 },
-        vote2024: { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 },
-        vote2026: { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 },
-      };
-    });
-
     entries.forEach(e => {
       const ac = String(e.ac || "").trim();
       const norm = Number.parseFloat(e.normalizedScore);
@@ -66,7 +56,6 @@ function useAnalyticsData(entries) {
       // Caste
       const casteLabel = getCasteLabel(ac, e.casteWeight);
       casteMap[casteLabel] = (casteMap[casteLabel] || 0) + 1;
-      const trendCaste = castes.includes(casteLabel) ? casteLabel : "Others";
 
       // Gender
       const gLabel = getGenderLabel(ac, e.genderWeight);
@@ -80,22 +69,16 @@ function useAnalyticsData(entries) {
       const v21 = String(e.vote2021 || "").trim() || "Others";
       const v21key = VOTE_PARTIES.includes(v21) ? v21 : "Others";
       v21Map[v21key] = (v21Map[v21key] || 0) + 1;
-      const t21 = WHO_WIN_ORDER.includes(v21) ? v21 : "Others";
-      trendMap[trendCaste].vote2021[t21] += weight;
 
       // Vote 2024
       const v24 = String(e.vote2024 || "").trim() || "Others";
       const v24key = VOTE_PARTIES.includes(v24) ? v24 : "Others";
       v24Map[v24key] = (v24Map[v24key] || 0) + 1;
-      const t24 = WHO_WIN_ORDER.includes(v24) ? v24 : "Others";
-      trendMap[trendCaste].vote2024[t24] += weight;
 
       // Vote 2026 AE (weighted by normalizedScore)
       const v26 = String(e.vote2026 || "").trim() || "Others";
       const v26key = VOTE_PARTIES.includes(v26) ? v26 : "Others";
       v26Map[v26key] = (v26Map[v26key] || 0) + weight;
-      const t26 = WHO_WIN_ORDER.includes(v26) ? v26 : "Others";
-      trendMap[trendCaste].vote2026[t26] += weight;
 
       // Who will win (2026 prediction, weighted by normalizedScore)
       const ww = String(e.whoWillWin || "").trim() || "Others";
@@ -140,24 +123,7 @@ function useAnalyticsData(entries) {
       value: whoTotal > 0 ? +((whoMap[p] / whoTotal) * 100).toFixed(1) : 0,
     }));
 
-    const casteVoteTrend = [];
-    castes.forEach(casteName => {
-      ["vote2021", "vote2024", "vote2026"].forEach(vk => {
-        const yearLabel = vk === "vote2021" ? "2021" : vk === "vote2024" ? "2024" : "2026";
-        const sums = trendMap[casteName][vk];
-        const grand = WHO_WIN_ORDER.reduce((s, p) => s + (sums[p] || 0), 0);
-        casteVoteTrend.push({
-          label: `${casteName} • ${yearLabel}`,
-          weightedTotal: +grand.toFixed(6),
-          LDF: grand > 0 ? +(((sums.LDF || 0) / grand) * 100).toFixed(1) : 0,
-          UDF: grand > 0 ? +(((sums.UDF || 0) / grand) * 100).toFixed(1) : 0,
-          "BJP/NDA": grand > 0 ? +(((sums["BJP/NDA"] || 0) / grand) * 100).toFixed(1) : 0,
-          Others: grand > 0 ? +(((sums.Others || 0) / grand) * 100).toFixed(1) : 0,
-        });
-      });
-    });
-
-    return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrend, total };
+    return { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total };
   }, [entries]);
 }
 
@@ -349,66 +315,10 @@ function HBarChart({ data, color, colors, title, fixedHeight, vertical = false }
   );
 }
 
-function CasteVoteTrendChart({ data, colors }) {
-  if (!data.length) return <div className="analytics-empty">No data</div>;
-
-  const grouped = data.reduce((acc, row) => {
-    const [caste, year] = String(row.label).split(" • ");
-    if (!acc[caste]) acc[caste] = {};
-    acc[caste][year] = row;
-    return acc;
-  }, {});
-  const casteOrder = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
-  const yearOrder = ["2021", "2024", "2026"];
-
-  return (
-    <div className="analytics-card analytics-card-hero">
-      <h3 className="analytics-hero-title">Caste-wise voting trend (2021, 2024, 2026)</h3>
-      <p className="analytics-hero-sub">
-        Y-axis = caste. Each caste has 3 compact stacked bars (2021, 2024, 2026) showing party share.
-      </p>
-      <div className="caste-trend-legend">
-        {WHO_WIN_ORDER.map(p => (
-          <span key={p} className="legend-chip">
-            <i style={{ background: colors[p] }} />
-            {p}
-          </span>
-        ))}
-      </div>
-      <div className="caste-trend-grid">
-        {casteOrder.map((caste) => (
-          <div className="caste-trend-row" key={caste}>
-            <div className="caste-trend-y">{caste}</div>
-            <div className="caste-trend-bars">
-              {yearOrder.map((year) => {
-                const row = grouped[caste]?.[year] || { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0, weightedTotal: 0 };
-                return (
-                  <div className="year-stack-row" key={`${caste}-${year}`}>
-                    <span className="year-badge">{year}</span>
-                    <div className="stack-track" title={`${caste} ${year} (weighted ${row.weightedTotal})`}>
-                      {WHO_WIN_ORDER.map((p) => (
-                        <div
-                          key={p}
-                          className="stack-seg"
-                          style={{ width: `${row[p] || 0}%`, background: colors[p] }}
-                        />
-                      ))}
-                    </div>
-                    <span className="stack-total">{row.weightedTotal}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function Analytics({ entries, loading, selectedAC = "", onSelectedACChange }) {
   const [filterAC, setFilterAC] = useState("");
   const [filterFA, setFilterFA] = useState("");
+  const [trendCaste, setTrendCaste] = useState("Nair");
 
   useEffect(() => {
     if (selectedAC && selectedAC !== filterAC) {
@@ -432,7 +342,46 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
     });
   }, [entries, filterAC, filterFA]);
 
-  const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, casteVoteTrend, total } = useAnalyticsData(filtered);
+  const { caste, gender, age, vote2021, vote2024, vote2026, whoWillWin, total } = useAnalyticsData(filtered);
+  const casteOptions = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
+
+  const casteYearCountData = useMemo(() => {
+    const years = [
+      { label: "2021", key: "vote2021" },
+      { label: "2024", key: "vote2024" },
+      { label: "2026", key: "vote2026" },
+    ];
+
+    function normalizeParty(v) {
+      const s = String(v || "").trim();
+      if (s === "LDF" || s === "UDF" || s === "BJP/NDA") return s;
+      return "Others";
+    }
+
+    const rows = years.map(y => ({
+      year: y.label,
+      LDF: 0,
+      UDF: 0,
+      "BJP/NDA": 0,
+      Others: 0,
+      total: 0,
+    }));
+
+    if (!filtered?.length) return rows;
+
+    filtered.forEach((e) => {
+      const c = getCasteLabel(e.ac, e.casteWeight);
+      if (c !== trendCaste) return;
+
+      years.forEach((y, idx) => {
+        const p = normalizeParty(e[y.key]);
+        rows[idx][p] += 1;
+        rows[idx].total += 1;
+      });
+    });
+
+    return rows;
+  }, [filtered, trendCaste]);
 
   const filterLabel = [
     filterAC ? formatAcSelectLabel(filterAC) : "All ACs",
@@ -522,7 +471,46 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       </div>
 
       <div className="analytics-row single">
-        <CasteVoteTrendChart data={casteVoteTrend} colors={VOTE_COLORS} />
+        <div className="analytics-card analytics-card-hero analytics-trend-card">
+          <div className="analytics-trend-head">
+            <div>
+              <h3 className="analytics-hero-title" style={{ margin: 0 }}>Caste-wise voting count by year</h3>
+              <p className="analytics-hero-sub" style={{ margin: "6px 0 0" }}>
+                Raw count by party for 2021, 2024, and 2026 from the selected caste.
+              </p>
+            </div>
+            <div className="analytics-trend-select-wrap">
+              <label className="filter-label">Select caste</label>
+              <select className="filter-select analytics-trend-select" value={trendCaste} onChange={(e) => setTrendCaste(e.target.value)}>
+                {casteOptions.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={casteYearCountData} margin={{ top: 20, right: 20, left: 8, bottom: 8 }} barCategoryGap="22%">
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 800 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
+              <Tooltip
+                formatter={(value, name) => [value, name]}
+                labelFormatter={(label) => `Year ${label}`}
+              />
+              <Legend />
+              <Bar dataKey="LDF" fill={VOTE_COLORS.LDF} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="LDF" position="top" style={{ fontSize: 12, fontWeight: 700, fill: "#0f172a" }} />
+              </Bar>
+              <Bar dataKey="UDF" fill={VOTE_COLORS.UDF} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="UDF" position="top" style={{ fontSize: 12, fontWeight: 700, fill: "#0f172a" }} />
+              </Bar>
+              <Bar dataKey="BJP/NDA" fill={VOTE_COLORS["BJP/NDA"]} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="BJP/NDA" position="top" style={{ fontSize: 12, fontWeight: 700, fill: "#0f172a" }} />
+              </Bar>
+              <Bar dataKey="Others" fill={VOTE_COLORS.Others} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="Others" position="top" style={{ fontSize: 12, fontWeight: 700, fill: "#0f172a" }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
     </div>

@@ -92,12 +92,13 @@ export function useDateRangeEntries(fromDate, toDate) {
 }
 
 // All rows from Sheet1 (no date filter) — does not depend on summary tabs.
-export function useCumulativeEntries() {
+export function useCumulativeEntries(enabled = false) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetch_ = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
     setError(null);
     try {
@@ -109,9 +110,11 @@ export function useCumulativeEntries() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
-  useEffect(() => { fetch_(); }, [fetch_]);
+  useEffect(() => {
+    if (enabled) fetch_();
+  }, [enabled, fetch_]);
 
   return { entries, loading, error, refresh: fetch_ };
 }

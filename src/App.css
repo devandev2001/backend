@@ -609,6 +609,33 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   margin: 0 0 12px;
   max-width: 720px;
 }
+.analytics-trend-card {
+  border-color: #1d4ed8;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 52%);
+}
+.analytics-trend-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.analytics-trend-select-wrap {
+  min-width: 230px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 12px 9px;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.1);
+}
+.analytics-trend-select {
+  border-bottom-color: #60a5fa;
+  background: #eff6ff;
+  font-weight: 700;
+}
+.analytics-trend-select:focus {
+  border-bottom-color: #2563eb;
+}
 .analytics-empty { color: var(--outline); font-size: 13px; text-align: center; padding: 24px; }
 .chart-tooltip {
   background: var(--on-surface); color: #fff; padding: 8px 12px; border-radius: 4px;
@@ -644,9 +671,39 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 @media (max-width: 1100px) { .summary-compare-grid.two-cols { grid-template-columns: 1fr; } }
 @media (max-width: 1100px) { .analytics-row-three { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .analytics-row { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .analytics-trend-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .analytics-trend-select-wrap {
+    min-width: 0;
+  }
+}
 
 /* ── Messages ── */
-.loading-msg { text-align: center; padding: 40px; color: var(--on-surface-variant); font-size: 13px; }
+.loading-msg {
+  text-align: center;
+  padding: 40px;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.loading-msg::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #bfdbfe;
+  border-top-color: #2563eb;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 .error-banner { background: #ffdad6; color: var(--error); padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
 .info-banner { background: var(--surface-container); color: var(--on-surface); padding: 14px 16px; border-radius: 4px; font-size: 13px; line-height: 1.6; border-left: 3px solid var(--secondary-container); }
 .info-banner code { background: var(--surface-container-high); padding: 2px 6px; border-radius: 3px; font-size: 11px; }
