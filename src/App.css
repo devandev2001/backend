@@ -229,6 +229,29 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 
 /* ── Show all table ── */
 .entry-count-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.entry-count-left {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.entry-count-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.tracker-date-input {
+  background: #fff7ed;
+  border: 2px solid #fb923c !important;
+  color: #7c2d12 !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.18);
+}
+.tracker-date-input:focus {
+  border-color: #ea580c !important;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.2);
+}
 .show-all-btn {
   padding: 6px 14px; background: transparent; border: 1.5px solid var(--primary-container);
   border-radius: 20px; font-size: 12px; font-weight: 700; font-family: var(--font-body);
@@ -371,7 +394,7 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
   padding: 18px 20px;
   letter-spacing: 0.12em;
 }
-.entry-table td, .summary-table td { padding: 9px 14px; border-bottom: 1px solid var(--surface-container-high); vertical-align: middle; }
+.entry-table td, .summary-table td { padding: 6px 10px; border-bottom: 1px solid var(--surface-container-high); vertical-align: middle; }
 .row-even { background: var(--surface-bright); }
 .row-odd  { background: var(--surface-container-low); }
 .entry-table tr:hover td, .summary-table tr:hover td { background: #edf2ff; }
@@ -566,6 +589,49 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 .filter-chip { display: inline-block; background: var(--surface-container); color: var(--primary-container); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 .clear-filters-btn { margin-left: 8px; background: none; border: none; color: var(--error); font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
 .clear-filters-btn:hover { text-decoration: underline; }
+.label-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.caste-pill {
+  background: #e0e7ff;
+  color: #1e3a8a;
+  border-color: #c7d2fe;
+}
+.gender-pill {
+  background: #fce7f3;
+  color: #9d174d;
+  border-color: #fbcfe8;
+}
+.age-pill {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #bae6fd;
+}
+.party-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.party-chip-ldf { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.party-chip-udf { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
+.party-chip-bjp { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+.party-chip-notvoted { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.party-chip-nota { background: #e2e8f0; color: #334155; border-color: #cbd5e1; }
+.party-chip-other { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
 
 /* ── Tracker wrapper ── */
 .tracker-wrap { }
@@ -635,6 +701,59 @@ h1, h2, h3, .brand { font-family: var(--font-headline); }
 }
 .analytics-trend-select:focus {
   border-bottom-color: #2563eb;
+}
+.analytics-trend-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.analytics-trend-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ac-heatmap-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ac-heatmap-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.ac-heatmap-main {
+  min-width: 0;
+}
+.ac-heatmap-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e293b;
+}
+.ac-heatmap-meta {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.ac-heatmap-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
 }
 .analytics-empty { color: var(--outline); font-size: 13px; text-align: center; padding: 24px; }
 .chart-tooltip {

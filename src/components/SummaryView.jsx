@@ -158,10 +158,6 @@ function SummarySection({ title, rows, loading, showDownload, onDownload, downlo
           </tbody>
         </table>
       </div>
-      <div className="table-footnote" style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
-        Percentages use total weighted score including rows marked as Others/blank party.
-      </div>
-
     </div>
   );
 }
@@ -244,8 +240,8 @@ export default function SummaryView({
           <div className="summary-group-title">Selected / Today — {tabName}</div>
           <div className="summary-compare-grid two-cols metric-compare-grid">
             <SummarySection
-              title="Who Will Win (weighted)"
-              rows={rowsWW}
+              title="Who Will You Vote For (2026 weighted)"
+              rows={rowsV26}
               loading={false}
               showDownload
               onDownload={() => downloadExcel(showCumulativeBelow)}
@@ -253,8 +249,8 @@ export default function SummaryView({
               onAcClick={onAcClick}
             />
             <SummarySection
-              title="Who Will You Vote For (2026 weighted)"
-              rows={rowsV26}
+              title="Who Will Win (weighted)"
+              rows={rowsWW}
               loading={false}
               showDownload
               onDownload={() => downloadExcel(showCumulativeBelow)}
@@ -267,8 +263,8 @@ export default function SummaryView({
           <div className="summary-group-title">Cumulative — all dates</div>
           <div className="summary-compare-grid two-cols metric-compare-grid">
             <SummarySection
-              title="Who Will Win (weighted)"
-              rows={cumRowsWW}
+              title="Who Will You Vote For (2026 weighted)"
+              rows={cumRowsV26}
               loading={!!cumulativeLoading}
               showDownload
               onDownload={() => downloadExcel(true)}
@@ -276,8 +272,8 @@ export default function SummaryView({
               onAcClick={onAcClick}
             />
             <SummarySection
-              title="Who Will You Vote For (2026 weighted)"
-              rows={cumRowsV26}
+              title="Who Will Win (weighted)"
+              rows={cumRowsWW}
               loading={!!cumulativeLoading}
               showDownload
               onDownload={() => downloadExcel(true)}
@@ -291,8 +287,8 @@ export default function SummaryView({
       {!showCumulativeBelow && (
         <div className="summary-compare-grid two-cols metric-compare-grid">
           <SummarySection
-            title={`Summary — ${tabName} — Who Will Win (weighted)`}
-            rows={rowsWW}
+            title={`Summary — ${tabName} — Who Will You Vote For (2026 weighted)`}
+            rows={rowsV26}
             loading={false}
             showDownload
             onDownload={() => downloadExcel(showCumulativeBelow)}
@@ -300,8 +296,8 @@ export default function SummaryView({
             onAcClick={onAcClick}
           />
           <SummarySection
-            title={`Summary — ${tabName} — Who Will You Vote For (2026 weighted)`}
-            rows={rowsV26}
+            title={`Summary — ${tabName} — Who Will Win (weighted)`}
+            rows={rowsWW}
             loading={false}
             showDownload
             onDownload={() => downloadExcel(showCumulativeBelow)}

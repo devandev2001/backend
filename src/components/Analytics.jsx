@@ -27,9 +27,39 @@ const VOTE_COLORS  = {
   "Not Voted": "#92400e",
 };
 const WHO_WIN_ORDER = ["LDF", "UDF", "BJP/NDA", "Others"];
+const CORE_PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
+const SHEET_PARTY_ORDER = ["LDF", "UDF", "BJP/NDA", "Others", "Not Voted", "NOTA", "Blank"];
 
 function pct(count, total) {
   return total === 0 ? 0 : +((count / total) * 100).toFixed(1);
+}
+
+function normalizeCoreParty(v) {
+  const s = String(v || "").trim();
+  if (s === "LDF" || s === "UDF" || s === "BJP/NDA") return s;
+  return "Others";
+}
+
+function normalizeSheetParty(v) {
+  const raw = String(v || "").trim();
+  if (!raw) return "Blank";
+  const key = raw.toUpperCase().replace(/\s+/g, "");
+  if (key === "LDF") return "LDF";
+  if (key === "UDF") return "UDF";
+  if (key === "BJP/NDA" || key === "BJP-NDA" || key === "BJPNDA" || key === "BJP" || key === "NDA") return "BJP/NDA";
+  if (key === "NOTVOTED") return "Not Voted";
+  if (key === "NOTA") return "NOTA";
+  return raw;
+}
+
+function sortPartyLabels(labels) {
+  const orderIndex = new Map(SHEET_PARTY_ORDER.map((p, i) => [p, i]));
+  return [...labels].sort((a, b) => {
+    const ia = orderIndex.has(a) ? orderIndex.get(a) : 999;
+    const ib = orderIndex.has(b) ? orderIndex.get(b) : 999;
+    if (ia !== ib) return ia - ib;
+    return String(a).localeCompare(String(b));
+  });
 }
 
 function useAnalyticsData(entries) {
@@ -352,12 +382,6 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       { label: "2026", key: "vote2026" },
     ];
 
-    function normalizeParty(v) {
-      const s = String(v || "").trim();
-      if (s === "LDF" || s === "UDF" || s === "BJP/NDA") return s;
-      return "Others";
-    }
-
     const rows = years.map(y => ({
       year: y.label,
       LDF: 0,
@@ -374,7 +398,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       if (c !== trendCaste) return;
 
       years.forEach((y, idx) => {
-        const p = normalizeParty(e[y.key]);
+        const p = normalizeCoreParty(e[y.key]);
         rows[idx][p] += 1;
         rows[idx].total += 1;
       });
@@ -382,6 +406,87 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
 
     return rows;
   }, [filtered, trendCaste]);
+
+  const partySwingData = useMemo(() => {
+    const years = [
+      { key: "vote2021", label: "2021" },
+      { key: "vote2024", label: "2024" },
+      { key: "vote2026", label: "2026" },
+    ];
+    const totals = { "2021": 0, "2024": 0, "2026": 0 };
+    const labels = new Set();
+    const countsByYear = { "2021": {}, "2024": {}, "2026": {} };
+
+    (filtered || []).forEach((e) => {
+      years.forEach((y) => {
+        const p = normalizeSheetParty(e[y.key]);
+        labels.add(p);
+        countsByYear[y.label][p] = (countsByYear[y.label][p] || 0) + 1;
+        totals[y.label] += 1;
+      });
+    });
+
+    return sortPartyLabels(labels).map((party) => ({
+      party,
+      c2021: countsByYear["2021"][party] || 0,
+      c2024: countsByYear["2024"][party] || 0,
+      c2026: countsByYear["2026"][party] || 0,
+      p2021: pct(countsByYear["2021"][party] || 0, totals["2021"]),
+      p2024: pct(countsByYear["2024"][party] || 0, totals["2024"]),
+      p2026: pct(countsByYear["2026"][party] || 0, totals["2026"]),
+    }));
+  }, [filtered]);
+
+  const intentVsWinnerData = useMemo(() => {
+    const voteMap = {};
+    const winMap = {};
+    const labels = new Set();
+    (filtered || []).forEach((e) => {
+      const v = normalizeSheetParty(e.vote2026);
+      const w = normalizeSheetParty(e.whoWillWin);
+      labels.add(v);
+      labels.add(w);
+      voteMap[v] = (voteMap[v] || 0) + 1;
+      winMap[w] = (winMap[w] || 0) + 1;
+    });
+    return sortPartyLabels(labels).map((party) => ({
+      party,
+      vote2026: voteMap[party] || 0,
+      whoWillWin: winMap[party] || 0,
+      gap: (winMap[party] || 0) - (voteMap[party] || 0),
+    }));
+  }, [filtered]);
+
+  const acCompetitiveness = useMemo(() => {
+    const byAc = {};
+    (filtered || []).forEach((e) => {
+      const ac = String(e.ac || "").trim() || "Unknown";
+      if (!byAc[ac]) byAc[ac] = { LDF: 0, UDF: 0, "BJP/NDA": 0, Others: 0 };
+      const p = normalizeCoreParty(e.vote2026);
+      byAc[ac][p] += 1;
+    });
+
+    const rows = Object.entries(byAc).map(([ac, c]) => {
+      const ordered = [...CORE_PARTIES]
+        .map((p) => ({ party: p, count: c[p] || 0 }))
+        .sort((a, b) => b.count - a.count);
+      const top = ordered[0] || { party: "Others", count: 0 };
+      const second = ordered[1] || { party: "Others", count: 0 };
+      const totalVotes = ordered.reduce((s, x) => s + x.count, 0);
+      return {
+        ac,
+        leader: top.party,
+        leaderCount: top.count,
+        second: second.party,
+        secondCount: second.count,
+        margin: top.count - second.count,
+        marginPct: pct(top.count - second.count, totalVotes || 1),
+        totalVotes,
+      };
+    });
+
+    return rows.sort((a, b) => a.margin - b.margin);
+  }, [filtered]);
 
   const filterLabel = [
     filterAC ? formatAcSelectLabel(filterAC) : "All ACs",
@@ -486,6 +591,10 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
               </select>
             </div>
           </div>
+          <div className="analytics-trend-chip-row">
+            <span className="analytics-trend-chip">{filterAC ? formatAcSelectLabel(filterAC) : "All ACs"}</span>
+            <span className="analytics-trend-chip">{trendCaste}</span>
+          </div>
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={casteYearCountData} margin={{ top: 20, right: 20, left: 8, bottom: 8 }} barCategoryGap="22%">
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -510,6 +619,84 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="analytics-row single">
+        <div className="analytics-card analytics-card-hero">
+          <h3 className="analytics-hero-title">Party swing analysis (2021 → 2024 → 2026)</h3>
+          <p className="analytics-hero-sub">Counts shown on bars. Tooltip includes percentage share within each year.</p>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={partySwingData} margin={{ top: 20, right: 20, left: 8, bottom: 8 }} barCategoryGap="18%">
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="party" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 800 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
+              <Tooltip
+                formatter={(value, name, item) => {
+                  const d = item?.payload || {};
+                  if (name === "2021") return [`${value} (${d.p2021}%)`, name];
+                  if (name === "2024") return [`${value} (${d.p2024}%)`, name];
+                  if (name === "2026") return [`${value} (${d.p2026}%)`, name];
+                  return [value, name];
+                }}
+              />
+              <Legend />
+              <Bar dataKey="c2021" name="2021" fill="#94a3b8">
+                <LabelList dataKey="c2021" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }} />
+              </Bar>
+              <Bar dataKey="c2024" name="2024" fill="#64748b">
+                <LabelList dataKey="c2024" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }} />
+              </Bar>
+              <Bar dataKey="c2026" name="2026" fill="#1d4ed8">
+                <LabelList dataKey="c2026" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#1e3a8a" }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="analytics-row">
+        <div className="analytics-card analytics-card-hero">
+          <h3 className="analytics-hero-title">Vote intent vs winner perception gap</h3>
+          <p className="analytics-hero-sub">Compares 2026 vote choice count vs who-will-win count for each party.</p>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={intentVsWinnerData} margin={{ top: 20, right: 20, left: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="party" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 800 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="vote2026" name="Vote 2026 (count)" fill="#334155">
+                <LabelList dataKey="vote2026" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }} />
+              </Bar>
+              <Bar dataKey="whoWillWin" name="Who Will Win (count)" fill="#1d4ed8">
+                <LabelList dataKey="whoWillWin" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#1e3a8a" }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="analytics-card analytics-card-hero">
+          <h3 className="analytics-hero-title">AC competitiveness heatmap (Vote 2026)</h3>
+          <p className="analytics-hero-sub">Smaller margin means more competitive AC. Sorted by closest first.</p>
+          <div className="ac-heatmap-list">
+            {acCompetitiveness.slice(0, 12).map((row) => {
+              const intensity = Math.max(0.15, 1 - Math.min(1, row.margin / 80));
+              return (
+                <div key={row.ac} className="ac-heatmap-row">
+                  <div className="ac-heatmap-main">
+                    <div className="ac-heatmap-name">{formatAcSelectLabel(row.ac)}</div>
+                    <div className="ac-heatmap-meta">
+                      {row.leader} ({row.leaderCount}) vs {row.second} ({row.secondCount})
+                    </div>
+                  </div>
+                  <div className="ac-heatmap-badge" style={{ background: `rgba(239, 68, 68, ${intensity})` }}>
+                    Margin {row.margin}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
