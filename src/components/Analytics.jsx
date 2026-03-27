@@ -275,7 +275,7 @@ function PartyHeroChart({ data, colors, title, subtitle }) {
   );
 }
 
-function HBarChart({ data, color, colors, title, fixedHeight }) {
+function HBarChart({ data, color, colors, title, fixedHeight, vertical = false }) {
   if (!data.length) return <div className="analytics-empty">No data</div>;
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -291,6 +291,38 @@ function HBarChart({ data, color, colors, title, fixedHeight }) {
   };
 
   const barColor = (entry) => colors ? (colors[entry.name] || "#94a3b8") : color;
+
+  if (vertical) {
+    return (
+      <div className="analytics-card">
+        <h3 className="analytics-card-title">{title}</h3>
+        <ResponsiveContainer width="100%" height={fixedHeight || 280}>
+          <BarChart data={data} margin={{ top: 14, right: 20, left: 6, bottom: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#1e3a5f", fontWeight: 700 }} />
+            <YAxis
+              domain={[0, 100]}
+              tickFormatter={(v) => `${v}%`}
+              tick={{ fontSize: 11, fill: "#64748b" }}
+              width={44}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={72}>
+              {data.map((entry, i) => (
+                <Cell key={i} fill={barColor(entry)} />
+              ))}
+              <LabelList
+                dataKey="value"
+                position="top"
+                formatter={(v) => `${v}%`}
+                style={{ fontSize: 11, fill: "#1e3a5f", fontWeight: 700 }}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
 
   return (
     <div className="analytics-card">
@@ -485,8 +517,8 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       </div>
 
       <div className="analytics-row">
-        <HBarChart data={vote2021} colors={VOTE_COLORS} title="Vote 2021 AE" />
-        <HBarChart data={vote2024} colors={VOTE_COLORS} title="Vote 2024 GE" />
+        <HBarChart data={vote2021} colors={VOTE_COLORS} title="Vote 2021 AE" vertical />
+        <HBarChart data={vote2024} colors={VOTE_COLORS} title="Vote 2024 GE" vertical />
       </div>
 
       <div className="analytics-row single">
