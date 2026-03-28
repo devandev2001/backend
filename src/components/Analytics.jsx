@@ -157,6 +157,21 @@ function useAnalyticsData(entries) {
   }, [entries]);
 }
 
+/** Percentage share within that year, drawn above each bar (uses row.partyPct). */
+function PartySwingPctLabel({ x, y, width, height, value, payload, partyKey }) {
+  const n = Number(value);
+  if (!partyKey || !payload || !Number.isFinite(n) || n <= 0) return null;
+  const pc = payload.partyPct && payload.partyPct[partyKey];
+  if (pc == null) return null;
+  const cx = (Number(x) || 0) + (Number(width) || 0) / 2;
+  const cy = (Number(y) || 0) - 4;
+  return (
+    <text x={cx} y={cy} fill="#334155" fontSize={11} fontWeight={700} textAnchor="middle">
+      {`${pc}%`}
+    </text>
+  );
+}
+
 function DonutChart({ data, colors, title }) {
   if (!data.length) return <div className="analytics-empty">No data</div>;
 
@@ -630,7 +645,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       <div className="analytics-row single">
         <div className="analytics-card analytics-card-hero">
           <h3 className="analytics-hero-title">Party swing analysis (2021 → 2024 → 2026)</h3>
-          <p className="analytics-hero-sub">Years on the horizontal axis; grouped bars show each party. Counts on bars; tooltip adds share within that year.</p>
+          <p className="analytics-hero-sub">Years on the horizontal axis; grouped bars by party. Bar height is count; labels show % share within that year.</p>
           {partySwingParties.length === 0 ? (
             <div className="analytics-empty" style={{ minHeight: 200 }}>No data</div>
           ) : (
@@ -643,7 +658,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
                   formatter={(value, name, item) => {
                     const d = item?.payload || {};
                     const pc = d.partyPct && d.partyPct[name] != null ? d.partyPct[name] : null;
-                    return pc != null ? [`${value} (${pc}%)`, name] : [value, name];
+                    return pc != null ? [`${pc}% (${value} responses)`, name] : [value, name];
                   }}
                   labelFormatter={(label) => `Year ${label}`}
                 />
@@ -659,7 +674,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
                     <LabelList
                       dataKey={p}
                       position="top"
-                      style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }}
+                      content={(props) => <PartySwingPctLabel {...props} partyKey={p} />}
                     />
                   </Bar>
                 ))}
