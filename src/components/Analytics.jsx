@@ -407,8 +407,9 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
     return rows;
   }, [filtered, trendCaste]);
 
-  const partySwingData = useMemo(() => {
-    const years = [
+  /** One row per year; each party is a bar series (x = year, grouped bars = party). */
+  const { partySwingByYearRows, partySwingParties } = useMemo(() => {
+    const yearDefs = [
       { key: "vote2021", label: "2021" },
       { key: "vote2024", label: "2024" },
       { key: "vote2026", label: "2026" },
@@ -418,7 +419,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
     const countsByYear = { "2021": {}, "2024": {}, "2026": {} };
 
     (filtered || []).forEach((e) => {
-      years.forEach((y) => {
+      yearDefs.forEach((y) => {
         const p = normalizeSheetParty(e[y.key]);
         labels.add(p);
         countsByYear[y.label][p] = (countsByYear[y.label][p] || 0) + 1;
@@ -426,15 +427,19 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       });
     });
 
-    return sortPartyLabels(labels).map((party) => ({
-      party,
-      c2021: countsByYear["2021"][party] || 0,
-      c2024: countsByYear["2024"][party] || 0,
-      c2026: countsByYear["2026"][party] || 0,
-      p2021: pct(countsByYear["2021"][party] || 0, totals["2021"]),
-      p2024: pct(countsByYear["2024"][party] || 0, totals["2024"]),
-      p2026: pct(countsByYear["2026"][party] || 0, totals["2026"]),
-    }));
+    const parties = sortPartyLabels(labels);
+    const rows = ["2021", "2024", "2026"].map((yl) => {
+      const t = totals[yl];
+      const row = { year: yl, partyPct: {} };
+      parties.forEach((party) => {
+        const c = countsByYear[yl][party] || 0;
+        row[party] = c;
+        row.partyPct[party] = pct(c, t);
+      });
+      return row;
+    });
+
+    return { partySwingByYearRows: rows, partySwingParties: parties };
   }, [filtered]);
 
   const intentVsWinnerData = useMemo(() => {
@@ -625,33 +630,42 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
       <div className="analytics-row single">
         <div className="analytics-card analytics-card-hero">
           <h3 className="analytics-hero-title">Party swing analysis (2021 → 2024 → 2026)</h3>
-          <p className="analytics-hero-sub">Counts shown on bars. Tooltip includes percentage share within each year.</p>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={partySwingData} margin={{ top: 20, right: 20, left: 8, bottom: 8 }} barCategoryGap="18%">
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="party" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 800 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
-              <Tooltip
-                formatter={(value, name, item) => {
-                  const d = item?.payload || {};
-                  if (name === "2021") return [`${value} (${d.p2021}%)`, name];
-                  if (name === "2024") return [`${value} (${d.p2024}%)`, name];
-                  if (name === "2026") return [`${value} (${d.p2026}%)`, name];
-                  return [value, name];
-                }}
-              />
-              <Legend />
-              <Bar dataKey="c2021" name="2021" fill="#94a3b8">
-                <LabelList dataKey="c2021" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }} />
-              </Bar>
-              <Bar dataKey="c2024" name="2024" fill="#64748b">
-                <LabelList dataKey="c2024" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }} />
-              </Bar>
-              <Bar dataKey="c2026" name="2026" fill="#1d4ed8">
-                <LabelList dataKey="c2026" position="top" style={{ fontSize: 11, fontWeight: 700, fill: "#1e3a8a" }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="analytics-hero-sub">Years on the horizontal axis; grouped bars show each party. Counts on bars; tooltip adds share within that year.</p>
+          {partySwingParties.length === 0 ? (
+            <div className="analytics-empty" style={{ minHeight: 200 }}>No data</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={partySwingByYearRows} margin={{ top: 20, right: 20, left: 8, bottom: 8 }} barCategoryGap="18%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 800 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
+                <Tooltip
+                  formatter={(value, name, item) => {
+                    const d = item?.payload || {};
+                    const pc = d.partyPct && d.partyPct[name] != null ? d.partyPct[name] : null;
+                    return pc != null ? [`${value} (${pc}%)`, name] : [value, name];
+                  }}
+                  labelFormatter={(label) => `Year ${label}`}
+                />
+                <Legend />
+                {partySwingParties.map((p) => (
+                  <Bar
+                    key={p}
+                    dataKey={p}
+                    name={p}
+                    fill={VOTE_COLORS[p] || "#64748b"}
+                    radius={[4, 4, 0, 0]}
+                  >
+                    <LabelList
+                      dataKey={p}
+                      position="top"
+                      style={{ fontSize: 11, fontWeight: 700, fill: "#334155" }}
+                    />
+                  </Bar>
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
