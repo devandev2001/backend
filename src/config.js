@@ -6,7 +6,7 @@ export const PARTIES = ["LDF", "UDF", "BJP/NDA", "Others"];
 export const ACS = [
   "Kattakkada","Kovalam","Kazhakkoottam","Vattiyoorkavu","Thiruvananthapuram","Nemom","Attingal",
   "Chathannoor","Aranmula","Thiruvalla","Chengannur","Adoor","Poonjar","Kanjirappally",
-  "Pala","Thrissur","Kunnathunad","Palakkad","Kozhikode North",
+  "Pala","Malampuzha","Thrissur","Nattika","Manalur","Kunnathunad","Perumbavoor","Palakkad","Kozhikode North",
   "Kasaragod","Manjeshwaram"
 ];
 
@@ -27,8 +27,12 @@ export const AC_NUMBER_BY_NAME = {
   Poonjar: "101",
   Kanjirappally: "100",
   Pala: "93",
+  Malampuzha: "58",
   Thrissur: "67",
+  Nattika: "68",
+  Manalur: "69",
   Kunnathunad: "84",
+  Perumbavoor: "74",
   Palakkad: "56",
   "Kozhikode North": "27",
   Kasaragod: "2",
