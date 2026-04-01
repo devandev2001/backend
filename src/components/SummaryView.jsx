@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import * as XLSX from "xlsx";
-import { ACS, getAcNo, sortAcNames, canonicalAcName } from "../config";
+import { getAcNo, sortAcNames, canonicalAcName } from "../config";
 
 const PARTIES = ["LDF", "UDF", "BJP/NDA"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c" };
@@ -24,10 +24,6 @@ function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
 
   const acMap = {};
-  // Full roster: every tracked AC appears (0 entries until data lands).
-  sortAcNames([...ACS]).forEach(ac => {
-    acMap[ac] = emptyAcState();
-  });
 
   entries.forEach(e => {
     const ac = canonicalAcName(e.ac);
