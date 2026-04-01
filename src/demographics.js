@@ -107,7 +107,13 @@ export function getCasteLabel(ac, casteWeight) {
   return bestLabel;
 }
 
-export function getGenderLabel(ac, genderWeight) {
+export function getGenderLabel(ac, genderWeight, genderLabelFromSheet) {
+  const fromSheet = String(genderLabelFromSheet ?? "").trim();
+  const s = fromSheet.toLowerCase();
+  if (s === "male" || s === "female") {
+    return s === "male" ? "Male" : "Female";
+  }
+
   const raw = String(genderWeight ?? "").trim();
   if (raw === "Male" || raw === "Female") return raw;
   const low = raw.toLowerCase();
@@ -125,6 +131,8 @@ export function getGenderLabel(ac, genderWeight) {
   // Use strict < so ties (e.g. 50/50 AC, or float rounding) do not always become Male.
   if (md < fd) return "Male";
   if (fd < md) return "Female";
+  // Kasaragod (and any AC with equal male/female %): same weight for both — cannot infer from weight alone.
+  if (Math.abs(maleW - femaleW) < 1e-9) return "Unknown";
   return femaleW >= maleW ? "Female" : "Male";
 }
 

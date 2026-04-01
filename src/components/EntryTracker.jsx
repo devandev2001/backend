@@ -315,7 +315,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     {(() => {
                       const casteLabel = getCasteLabel(e.ac, e.casteWeight);
-                      const genderLabel = getGenderLabel(e.ac, e.genderWeight);
+                      const genderLabel = getGenderLabel(e.ac, e.genderWeight, e.genderLabel);
                       const ageLabel = getAgeLabel(e.ageWeight);
                       return (
                         <>

@@ -8,7 +8,7 @@ export const ACS = [
   "Chathannoor","Aranmula","Thiruvalla","Chengannur","Adoor","Poonjar","Kanjirappally",
   "Pala","Thrissur","Kunnathunad","Palakkad","Kozhikode North",
   "Kasaragod","Manjeshwaram",
-  "Nattika (SC)","Malampuzha","Manalur","Perumbavoor"
+  "Nattika","Malampuzha","Manalur","Perumbavoor"
 ];
 
 /** Official Kerala AC numbers (matches cast / ward mapping; sheet still stores name only). */
@@ -34,7 +34,7 @@ export const AC_NUMBER_BY_NAME = {
   "Kozhikode North": "27",
   Kasaragod: "2",
   Manjeshwaram: "1",
-  "Nattika (SC)": "68",
+  Nattika: "68",
   Manalur: "64",
   Malampuzha: "55",
   Perumbavoor: "74",

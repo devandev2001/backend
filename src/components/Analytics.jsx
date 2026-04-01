@@ -88,7 +88,7 @@ function useAnalyticsData(entries) {
       casteMap[casteLabel] = (casteMap[casteLabel] || 0) + 1;
 
       // Gender
-      const gLabel = getGenderLabel(ac, e.genderWeight);
+      const gLabel = getGenderLabel(ac, e.genderWeight, e.genderLabel);
       genderMap[gLabel] = (genderMap[gLabel] || 0) + 1;
 
       // Age
