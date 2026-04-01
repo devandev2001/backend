@@ -1,23 +1,9 @@
 import { useMemo } from "react";
 import * as XLSX from "xlsx";
-import { ACS, getAcNo, sortAcNames } from "../config";
+import { ACS, getAcNo, sortAcNames, canonicalAcName } from "../config";
 
 const PARTIES = ["LDF", "UDF", "BJP/NDA"];
 const partyColor = { LDF: "#dc2626", UDF: "#2563eb", "BJP/NDA": "#ea580c" };
-
-const AC_NAME_BY_KEY = ACS.reduce((acc, name) => {
-  const key = String(name).toLowerCase().replace(/[^a-z0-9]/g, "");
-  acc[key] = name;
-  return acc;
-}, {});
-
-function normalizeAcName(rawAc) {
-  const input = String(rawAc || "").trim();
-  if (!input) return "";
-  const key = input.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const aliasKey = key === "kattakada" ? "kattakkada" : key === "kowalam" ? "kovalam" : key;
-  return AC_NAME_BY_KEY[aliasKey] || input;
-}
 
 function normalizeParty(rawParty) {
   const p = String(rawParty || "").trim().toUpperCase().replace(/\s+/g, "");
@@ -28,20 +14,28 @@ function normalizeParty(rawParty) {
   return "Others";
 }
 
+function emptyAcState() {
+  const parties = {};
+  PARTIES.forEach(p => { parties[p] = { sum: 0, count: 0 }; });
+  return { totalRows: 0, othersSum: 0, parties };
+}
+
 function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
 
   const acMap = {};
+  // Full roster: every tracked AC appears (0 entries until data lands).
+  sortAcNames([...ACS]).forEach(ac => {
+    acMap[ac] = emptyAcState();
+  });
+
   entries.forEach(e => {
-    const ac = normalizeAcName(e.ac);
-    const acKey = ac.toLowerCase();
-    // Hide blank rows and requested AC exclusions.
-    if (!ac || acKey === "kovalam" || acKey === "kowalam") return;
+    const ac = canonicalAcName(e.ac);
+    if (!ac) return;
     const party = normalizeParty(e[partyField]);
     const score = parseFloat(e.normalizedScore) || 0;
     if (!acMap[ac]) {
-      acMap[ac] = { totalRows: 0, othersSum: 0, parties: {} };
-      PARTIES.forEach(p => { acMap[ac].parties[p] = { sum: 0, count: 0 }; });
+      acMap[ac] = emptyAcState();
     }
     acMap[ac].totalRows += 1;
     if (party === "Others") {

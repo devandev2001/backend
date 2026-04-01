@@ -11,6 +11,54 @@ export const ACS = [
   "Nattika","Malampuzha","Manalur","Perumbavoor"
 ];
 
+/** Typo / alternate spellings from sheets → canonical name in ACS (aligns with Apps Script normalizeAcName). */
+export const AC_NAME_ALIASES = {
+  kattakada: "Kattakkada",
+  kowalam: "Kovalam",
+  trivandrum: "Thiruvananthapuram",
+  kasargod: "Kasaragod",
+  kasragod: "Kasaragod",
+  kasaragode: "Kasaragod",
+  kasargode: "Kasaragod",
+  nemam: "Nemom",
+  naimam: "Nemom",
+  nemeom: "Nemom",
+  naiyamam: "Nemom",
+  neyyattinkara: "Nemom",
+  manjeswaram: "Manjeshwaram",
+  manjeshwar: "Manjeshwaram",
+  manjeswar: "Manjeshwaram",
+  nattikaac: "Nattika",
+  nattikasc: "Nattika",
+  thrissurac: "Thrissur",
+  malampuzha: "Malampuzha",
+  chengannur: "Chengannur",
+  manalurac: "Manalur",
+  perumbaavoor: "Perumbavoor",
+  kanjirapalli: "Kanjirappally",
+  kanjirappalli: "Kanjirappally",
+  kazhakootam: "Kazhakkoottam",
+  kunnathumar: "Kunnathunad",
+  kunnathunadu: "Kunnathunad",
+  kunnathunadac: "Kunnathunad",
+  gunnarthunadu: "Kunnathunad",
+};
+
+const AC_NAME_BY_KEY = ACS.reduce((acc, name) => {
+  acc[String(name).toLowerCase().replace(/[^a-z0-9]/g, "")] = name;
+  return acc;
+}, {});
+
+/** Map sheet / API value to canonical ACS name when possible. */
+export function canonicalAcName(raw) {
+  const input = String(raw || "").trim();
+  if (!input) return "";
+  const key = input.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (AC_NAME_BY_KEY[key]) return AC_NAME_BY_KEY[key];
+  if (AC_NAME_ALIASES[key]) return AC_NAME_ALIASES[key];
+  return input;
+}
+
 /** Official Kerala AC numbers (matches cast / ward mapping; sheet still stores name only). */
 export const AC_NUMBER_BY_NAME = {
   Kattakkada: "138",
