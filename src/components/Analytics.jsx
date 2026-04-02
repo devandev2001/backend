@@ -105,12 +105,12 @@ function useAnalyticsData(entries) {
       const v24key = VOTE_PARTIES.includes(v24) ? v24 : "Others";
       v24Map[v24key] = (v24Map[v24key] || 0) + 1;
 
-      // Vote 2026 AE (weighted by normalizedScore)
+      // Vote 2026 AE (SUM of finalValue per party, then % of row total)
       const v26 = String(e.vote2026 || "").trim() || "Others";
       const v26key = VOTE_PARTIES.includes(v26) ? v26 : "Others";
       v26Map[v26key] = (v26Map[v26key] || 0) + weight;
 
-      // Who will win (2026 prediction, weighted by normalizedScore)
+      // Who will win (SUM of finalValue per party, then % of row total)
       const ww = String(e.whoWillWin || "").trim() || "Others";
       const wwKey = WHO_WIN_ORDER.includes(ww) ? ww : "Others";
       whoMap[wwKey] = (whoMap[wwKey] || 0) + weight;
@@ -139,6 +139,7 @@ function useAnalyticsData(entries) {
       name: p, count: v24Map[p], value: pct(v24Map[p], total),
     }));
 
+    // Vote 2026: SUM of Final Values per party, shown as % of total (matches pivot)
     const vote2026Total = Object.values(v26Map).reduce((s, n) => s + n, 0);
     const vote2026 = VOTE_PARTIES.filter(p => v26Map[p]).map(p => ({
       name: p,
@@ -146,6 +147,7 @@ function useAnalyticsData(entries) {
       value: vote2026Total > 0 ? +((v26Map[p] / vote2026Total) * 100).toFixed(1) : 0,
     }));
 
+    // Who will win: SUM of Final Values per party, shown as % of total (matches pivot)
     const whoTotal = Object.values(whoMap).reduce((s, n) => s + n, 0);
     const whoWillWin = WHO_WIN_ORDER.filter(p => whoMap[p]).map(p => ({
       name: p,

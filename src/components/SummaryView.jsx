@@ -20,6 +20,11 @@ function emptyAcState() {
   return { totalRows: 0, othersSum: 0, parties };
 }
 
+/**
+ * Pivot-matching summary: SUM of Final Values, shown as % of row.
+ * For each AC row: party % = SUM(finalValue where party=X) / SUM(finalValue all parties) × 100.
+ * This is exactly what the Google Sheets pivot does (SUM + % of row).
+ */
 function calcSummary(entries, partyField = "whoWillWin") {
   if (!entries || entries.length === 0) return [];
 
@@ -54,6 +59,7 @@ function calcSummary(entries, partyField = "whoWillWin") {
       partySums[p] = partyData[p].sum;
       recognizedTotal += partyData[p].sum;
     });
+    // Row total = sum of all party final values (LDF + UDF + BJP/NDA + Others)
     const grandTotal = recognizedTotal + acData.othersSum;
 
     const pct = {};
