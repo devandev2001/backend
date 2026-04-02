@@ -3,18 +3,21 @@ import QuickStats from "./components/QuickStats";
 import EntryTracker from "./components/EntryTracker";
 import SummaryView from "./components/SummaryView";
 import Analytics from "./components/Analytics";
+import RapidEntryDetector from "./components/RapidEntryDetector";
 import { useDateRangeEntries, useCumulativeEntries } from "./useSheetData";
 import { toTabName } from "./config";
 import "./App.css";
 
 const NAV = [
   { id: "entries",   icon: "query_stats", label: "Entry Tracker" },
+  { id: "rapid",     icon: "speed",       label: "Rapid Entry" },
   { id: "summary",   icon: "bar_chart",   label: "Summary" },
   { id: "analytics", icon: "analytics",   label: "Analytics" },
 ];
 
 const TAB_TITLES = {
   entries:   { title: "Entry Tracker",       sub: "Real-time field data submissions" },
+  rapid:     { title: "Rapid Entry Detector", sub: "Flag FAs with consecutive entries under 35s" },
   summary:   { title: "Summary & Download",  sub: "Party share by assembly constituency" },
   analytics: { title: "Analytics",           sub: "Demographic & vote distribution charts" },
 };
@@ -238,6 +241,13 @@ export default function App() {
                   entries={entries}
                   loading={entriesLoading}
                   error={entriesError}
+                  onRefresh={refreshEntries}
+                />
+              )}
+              {tab === "rapid" && (
+                <RapidEntryDetector
+                  entries={entries}
+                  loading={entriesLoading}
                   onRefresh={refreshEntries}
                 />
               )}
