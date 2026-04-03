@@ -264,7 +264,7 @@ export default function App() {
                   }}
                 />
               )}
-              {tab === "analytics" && entries.length > 0 && (
+              {tab === "analytics" && (
                 <Analytics
                   entries={entries}
                   loading={entriesLoading}

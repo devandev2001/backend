@@ -35,8 +35,10 @@ function pct(count, total) {
 }
 
 function normalizeCoreParty(v) {
-  const s = String(v || "").trim();
-  if (s === "LDF" || s === "UDF" || s === "BJP/NDA") return s;
+  const s = String(v || "").trim().toUpperCase().replace(/\s+/g, "");
+  if (s === "LDF") return "LDF";
+  if (s === "UDF") return "UDF";
+  if (s === "BJP/NDA" || s === "BJP-NDA" || s === "BJPNDA" || s === "BJP" || s === "NDA") return "BJP/NDA";
   return "Others";
 }
 
@@ -47,8 +49,9 @@ function normalizeSheetParty(v) {
   if (key === "LDF") return "LDF";
   if (key === "UDF") return "UDF";
   if (key === "BJP/NDA" || key === "BJP-NDA" || key === "BJPNDA" || key === "BJP" || key === "NDA") return "BJP/NDA";
-  if (key === "NOTVOTED") return "Not Voted";
+  if (key === "NOTVOTED" || key === "NOT-VOTED" || key === "DIDNOTVOTE") return "Not Voted";
   if (key === "NOTA") return "NOTA";
+  if (key === "OTHERS" || key === "OTHER") return "Others";
   return raw;
 }
 
@@ -81,7 +84,9 @@ function useAnalyticsData(entries) {
     entries.forEach(e => {
       const ac = String(e.ac || "").trim();
       const norm = Number.parseFloat(e.normalizedScore);
-      const weight = Number.isFinite(norm) ? norm : 0;
+      // Use finalValue/normalizedScore as weight; fall back to 1 so entries with a
+      // missing/zero score are still counted rather than silently dropped.
+      const weight = (Number.isFinite(norm) && norm > 0) ? norm : 1;
 
       // Caste — prefer the already-resolved casteLabel column from the API;
       // fall back to weight-based lookup only when the label is absent/blank.
@@ -91,12 +96,13 @@ function useAnalyticsData(entries) {
         : getCasteLabel(ac, e.casteWeight);  // older rows that only have a weight
       casteMap[casteLabel] = (casteMap[casteLabel] || 0) + 1;
 
-      // Gender
+      // Gender — prefer genderLabel text column, fall back to weight lookup
       const gLabel = getGenderLabel(ac, e.genderWeight, e.genderLabel);
       genderMap[gLabel] = (genderMap[gLabel] || 0) + 1;
 
-      // Age
-      const aLabel = getAgeLabel(e.ageWeight);
+      // Age — prefer ageLabel text column from the API; fall back to weight proximity
+      const rawAgeLabel = String(e.ageLabel ?? "").trim();
+      const aLabel = rawAgeLabel ? getAgeLabel(rawAgeLabel) : getAgeLabel(e.ageWeight);
       ageMap[aLabel] = (ageMap[aLabel] || 0) + 1;
 
       // Vote 2021
@@ -179,7 +185,12 @@ function PartySwingPctLabel({ x, y, width, height, value, payload, partyKey }) {
 }
 
 function DonutChart({ data, colors, title }) {
-  if (!data.length) return <div className="analytics-empty">No data</div>;
+  if (!data.length) return (
+    <div className="analytics-card">
+      <h3 className="analytics-card-title">{title}</h3>
+      <div className="analytics-empty">No data</div>
+    </div>
+  );
 
   const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
     if (value < 4) return null;
@@ -293,7 +304,12 @@ function PartyHeroChart({ data, colors, title, subtitle }) {
 }
 
 function HBarChart({ data, color, colors, title, fixedHeight, vertical = false }) {
-  if (!data.length) return <div className="analytics-empty">No data</div>;
+  if (!data.length) return (
+    <div className="analytics-card">
+      <h3 className="analytics-card-title">{title}</h3>
+      <div className="analytics-empty">No data</div>
+    </div>
+  );
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) {
