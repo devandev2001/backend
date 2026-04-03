@@ -105,40 +105,50 @@ function useAnalyticsData(entries) {
       const aLabel = rawAgeLabel ? getAgeLabel(rawAgeLabel) : getAgeLabel(e.ageWeight);
       ageMap[aLabel] = (ageMap[aLabel] || 0) + 1;
 
-      // Vote 2021
-      const v21 = String(e.vote2021 || "").trim() || "Others";
-      const v21key = VOTE_PARTIES.includes(v21) ? v21 : "Others";
+      // Vote 2021 — normalise first, then bucket into VOTE_PARTIES
+      const v21norm = normalizeSheetParty(e.vote2021);
+      const v21key = VOTE_PARTIES.includes(v21norm) ? v21norm : "Others";
       v21Map[v21key] = (v21Map[v21key] || 0) + 1;
 
-      // Vote 2024
-      const v24 = String(e.vote2024 || "").trim() || "Others";
-      const v24key = VOTE_PARTIES.includes(v24) ? v24 : "Others";
+      // Vote 2024 — same normalisation
+      const v24norm = normalizeSheetParty(e.vote2024);
+      const v24key = VOTE_PARTIES.includes(v24norm) ? v24norm : "Others";
       v24Map[v24key] = (v24Map[v24key] || 0) + 1;
 
-      // Vote 2026 AE (SUM of finalValue per party, then % of row total)
-      const v26 = String(e.vote2026 || "").trim() || "Others";
-      const v26key = VOTE_PARTIES.includes(v26) ? v26 : "Others";
+      // Vote 2026 AE — weighted by finalValue
+      const v26norm = normalizeSheetParty(e.vote2026);
+      const v26key = VOTE_PARTIES.includes(v26norm) ? v26norm : "Others";
       v26Map[v26key] = (v26Map[v26key] || 0) + weight;
 
-      // Who will win (SUM of finalValue per party, then % of row total)
-      const ww = String(e.whoWillWin || "").trim() || "Others";
-      const wwKey = WHO_WIN_ORDER.includes(ww) ? ww : "Others";
+      // Who will win — weighted by finalValue; only 4-party buckets
+      const wwnorm = normalizeSheetParty(e.whoWillWin);
+      const wwKey = WHO_WIN_ORDER.includes(wwnorm) ? wwnorm : "Others";
       whoMap[wwKey] = (whoMap[wwKey] || 0) + weight;
     });
 
     const total = entries.length;
 
+    // For demographic % — use count of entries that resolved to a known label
+    // so the slices add up to 100% of the resolved portion.
+    const casteResolved = Object.entries(casteMap)
+      .filter(([name]) => name !== "Unknown")
+      .reduce((s, [, c]) => s + c, 0);
+    const genderResolved = Object.entries(genderMap)
+      .filter(([name]) => name !== "Unknown")
+      .reduce((s, [, c]) => s + c, 0);
+
     const caste = Object.entries(casteMap)
       .filter(([name]) => name !== "Unknown")
-      .map(([name, count]) => ({ name, count, value: pct(count, total) }));
+      .map(([name, count]) => ({ name, count, value: pct(count, casteResolved) }));
 
     const gender = Object.entries(genderMap)
       .filter(([name]) => name !== "Unknown")
-      .map(([name, count]) => ({ name, count, value: pct(count, total) }));
+      .map(([name, count]) => ({ name, count, value: pct(count, genderResolved) }));
 
     const AGE_ORDER = ["18-19","20-29","30-39","40-49","50-59","60-69","70-79","80+"];
+    const ageResolved = AGE_ORDER.filter(k => ageMap[k] && k !== "Unknown").reduce((s, k) => s + (ageMap[k] || 0), 0);
     const age = AGE_ORDER.filter(k => ageMap[k]).map(k => ({
-      name: k, count: ageMap[k], value: pct(ageMap[k], total),
+      name: k, count: ageMap[k], value: pct(ageMap[k], ageResolved || total),
     }));
 
     const vote2021 = VOTE_PARTIES.filter(p => v21Map[p]).map(p => ({
