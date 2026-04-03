@@ -29,14 +29,17 @@ function localIso(d) {
 // Local calendar date (avoid UTC day skew from toISOString for non-UTC time zones)
 const today = localIso(new Date());
 
+// Default "from" = 7 days ago so the dashboard shows data immediately on load
+const sevenDaysAgo = localIso(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
+
 export default function App() {
   const [tab, setTab]             = useState("entries");
   const [cumulative, setCumulative] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsAC, setAnalyticsAC] = useState("");
 
-  // Date range — defaults to today
-  const [fromDate, setFromDate] = useState(today);
+  // Date range — defaults to last 7 days so data is visible on first load
+  const [fromDate, setFromDate] = useState(sevenDaysAgo);
   const [toDate,   setToDate]   = useState(today);
 
   const range = useDateRangeEntries(
