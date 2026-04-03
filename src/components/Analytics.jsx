@@ -83,8 +83,12 @@ function useAnalyticsData(entries) {
       const norm = Number.parseFloat(e.normalizedScore);
       const weight = Number.isFinite(norm) ? norm : 0;
 
-      // Caste
-      const casteLabel = getCasteLabel(ac, e.casteWeight);
+      // Caste — prefer the already-resolved casteLabel column from the API;
+      // fall back to weight-based lookup only when the label is absent/blank.
+      const rawCasteLabel = String(e.casteLabel ?? "").trim();
+      const casteLabel = rawCasteLabel
+        ? getCasteLabel(ac, rawCasteLabel)   // canonicalises spelling variants
+        : getCasteLabel(ac, e.casteWeight);  // older rows that only have a weight
       casteMap[casteLabel] = (casteMap[casteLabel] || 0) + 1;
 
       // Gender
@@ -411,7 +415,10 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
     if (!filtered?.length) return rows;
 
     filtered.forEach((e) => {
-      const c = getCasteLabel(e.ac, e.casteWeight);
+      const rawCasteLabel = String(e.casteLabel ?? "").trim();
+      const c = rawCasteLabel
+        ? getCasteLabel(e.ac, rawCasteLabel)
+        : getCasteLabel(e.ac, e.casteWeight);
       if (c !== trendCaste) return;
 
       years.forEach((y, idx) => {

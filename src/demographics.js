@@ -46,7 +46,7 @@ const CASTES = ["Nair", "Ezhava", "Muslim", "Christian", "SC/ST", "Others"];
 
 /** Lowercase / variant spellings → CASTES key (matches Apps Script canonicalCasteKey). */
 function canonicalCasteTextLabel(raw) {
-  const key = String(raw || "").trim().toLowerCase().replace(/\s+/g, "");
+  const key = String(raw || "").trim().toLowerCase().replace(/\s+/g, "").replace(/-/g, "/");
   const map = {
     nair: "Nair",
     ezhava: "Ezhava",
