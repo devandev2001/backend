@@ -67,6 +67,27 @@ export function useDates() {
   return { dates, loading };
 }
 
+/**
+ * Fetches all unique yyyy-MM-dd dates that exist in Sheet1 column A.
+ * Uses the ?action=timestamps endpoint so the dashboard can offer a date picker
+ * with only dates that actually have data — independent of summary tab names.
+ */
+export function useTimestampDates() {
+  const [dates, setDates] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${SCRIPT_URL}?action=timestamps`)
+      .then(r => r.json())
+      .then(j => setDates(j.dates || []))
+      .catch(() => setDates([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { dates, loading };
+}
+
 // Fetches entries for a specific date range (from/to inclusive, yyyy-mm-dd).
 // Uses API ?from=&to= so Sheet1 rows are matched by real calendar day — not by summary tab names.
 export function useDateRangeEntries(fromDate, toDate) {
