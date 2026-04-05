@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ACS, PARTIES, formatAcSelectLabel, getAcNo, sortAcNames } from "../config";
+import { PARTIES, formatAcSelectLabel, getAcNo, sortAcNames } from "../config";
 import { getCasteLabel, getGenderLabel, getAgeLabel } from "../demographics";
 
 const DEFAULT_LIMIT = 50;
@@ -72,6 +72,13 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
     link.click();
     URL.revokeObjectURL(link.href);
   }
+
+  // Only show ACs that actually have data in the sheet
+  const sheetACs = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
+    const acSet = new Set(entries.map(e => String(e.ac || "").trim()).filter(Boolean));
+    return sortAcNames([...acSet]);
+  }, [entries]);
 
   // FA names filtered by selected AC
   const faNames = useMemo(() => {
@@ -146,7 +153,7 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
           <label className="filter-label">Assembly Constituency</label>
           <select className="filter-select" value={filterAC} onChange={e => handleACChange(e.target.value)}>
             <option value="">All Constituencies</option>
-            {sortAcNames(ACS).map(ac => (
+            {sheetACs.map(ac => (
               <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
             ))}
           </select>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ACS, formatAcSelectLabel, sortAcNames } from "../config";
+import { formatAcSelectLabel, sortAcNames } from "../config";
 import { getCasteLabel, getGenderLabel, getAgeLabel } from "../demographics";
 
 const THRESHOLD_SEC = 35;
@@ -89,6 +89,13 @@ export default function RapidEntryDetector({ entries, loading, onRefresh }) {
   const [faSearch, setFaSearch]             = useState("");
   const [expandedPair, setExpandedPair]     = useState(null);
   const [expandedFA, setExpandedFA]         = useState(null);
+
+  // Only show ACs that actually have data in the sheet
+  const sheetACs = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
+    const acSet = new Set(entries.map(e => String(e.ac || "").trim()).filter(Boolean));
+    return sortAcNames([...acSet]);
+  }, [entries]);
 
   // ── Core analysis ──────────────────────────────────────────────
   const { allPairs, faStats, allFAs } = useMemo(() => {
@@ -479,7 +486,7 @@ export default function RapidEntryDetector({ entries, loading, onRefresh }) {
               <label className="filter-label">AC</label>
               <select className="filter-select" value={filterAC} onChange={e => setFilterAC(e.target.value)}>
                 <option value="">All ACs</option>
-                {sortAcNames(ACS).map(ac => (
+                {sheetACs.map(ac => (
                   <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
                 ))}
               </select>
