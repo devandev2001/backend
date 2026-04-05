@@ -88,21 +88,27 @@ function useAnalyticsData(entries) {
       // missing/zero score are still counted rather than silently dropped.
       const weight = (Number.isFinite(norm) && norm > 0) ? norm : 1;
 
-      // Caste — prefer the already-resolved casteLabel column from the API;
-      // fall back to weight-based lookup only when the label is absent/blank.
+      // Caste — prefer the text casteLabel column if it's actually a text label;
+      // if it's a number (old rows where label col has a weight), use casteWeight instead.
       const rawCasteLabel = String(e.casteLabel ?? "").trim();
-      const casteLabel = rawCasteLabel
-        ? getCasteLabel(ac, rawCasteLabel)   // canonicalises spelling variants
-        : getCasteLabel(ac, e.casteWeight);  // older rows that only have a weight
+      const casteIsText = rawCasteLabel && isNaN(parseFloat(rawCasteLabel));
+      const casteLabel = casteIsText
+        ? getCasteLabel(ac, rawCasteLabel)
+        : getCasteLabel(ac, e.casteWeight);
       casteMap[casteLabel] = (casteMap[casteLabel] || 0) + 1;
 
-      // Gender — prefer genderLabel text column, fall back to weight lookup
-      const gLabel = getGenderLabel(ac, e.genderWeight, e.genderLabel);
+      // Gender — prefer genderLabel if it's text (Male/Female); else use weight
+      const rawGenderLabel = String(e.genderLabel ?? "").trim();
+      const genderIsText = rawGenderLabel && isNaN(parseFloat(rawGenderLabel));
+      const gLabel = genderIsText
+        ? getGenderLabel(ac, e.genderWeight, rawGenderLabel)
+        : getGenderLabel(ac, e.genderWeight, "");
       genderMap[gLabel] = (genderMap[gLabel] || 0) + 1;
 
-      // Age — prefer ageLabel text column from the API; fall back to weight proximity
+      // Age — prefer ageLabel if it's a known age range text; else use weight
       const rawAgeLabel = String(e.ageLabel ?? "").trim();
-      const aLabel = rawAgeLabel ? getAgeLabel(rawAgeLabel) : getAgeLabel(e.ageWeight);
+      const ageIsText = rawAgeLabel && isNaN(parseFloat(rawAgeLabel));
+      const aLabel = ageIsText ? getAgeLabel(rawAgeLabel) : getAgeLabel(e.ageWeight);
       ageMap[aLabel] = (ageMap[aLabel] || 0) + 1;
 
       // Vote 2021 — normalise first, then bucket into VOTE_PARTIES
@@ -449,7 +455,8 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
 
     filtered.forEach((e) => {
       const rawCasteLabel = String(e.casteLabel ?? "").trim();
-      const c = rawCasteLabel
+      const casteIsText = rawCasteLabel && isNaN(parseFloat(rawCasteLabel));
+      const c = casteIsText
         ? getCasteLabel(e.ac, rawCasteLabel)
         : getCasteLabel(e.ac, e.casteWeight);
       if (c !== trendCaste) return;

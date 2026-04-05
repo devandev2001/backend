@@ -161,13 +161,16 @@ function normalizeAcName(ac) {
 
 export function getCasteLabel(ac, casteWeight) {
   const raw = String(casteWeight ?? "").trim();
+  if (!raw) return "Unknown";
+  // If it's a known caste text label, return it directly
   const fromText = canonicalCasteTextLabel(raw);
   if (fromText) return fromText;
   if (CASTES.includes(raw)) return raw;
+  // If raw is a number (e.g. old rows where label column has a weight), do reverse lookup
+  const w = parseFloat(raw);
+  if (!Number.isFinite(w) || w === 0) return "Unknown";
   const acData = AC_DEMOGRAPHICS[normalizeAcName(ac)];
   if (!acData) return "Unknown";
-  const w = parseFloat(casteWeight);
-  if (!Number.isFinite(w) || w === 0) return "Unknown";
   let bestLabel = "Others";
   let bestDiff = Infinity;
   for (const c of CASTES) {

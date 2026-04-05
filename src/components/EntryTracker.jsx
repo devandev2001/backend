@@ -314,9 +314,15 @@ export default function EntryTracker({ entries, loading, error, onRefresh }) {
                 (showAll ? filtered : filtered.slice(0, DEFAULT_LIMIT)).map((e, i) => (
                   <tr key={i} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                     {(() => {
-                      const casteLabel = getCasteLabel(e.ac, e.casteWeight);
-                      const genderLabel = getGenderLabel(e.ac, e.genderWeight, e.genderLabel);
-                      const ageLabel = getAgeLabel(e.ageWeight);
+                      const rawCaste = String(e.casteLabel ?? "").trim();
+                      const casteIsText = rawCaste && isNaN(parseFloat(rawCaste));
+                      const casteLabel = casteIsText ? getCasteLabel(e.ac, rawCaste) : getCasteLabel(e.ac, e.casteWeight);
+                      const rawGender = String(e.genderLabel ?? "").trim();
+                      const genderIsText = rawGender && isNaN(parseFloat(rawGender));
+                      const genderLabel = genderIsText ? getGenderLabel(e.ac, e.genderWeight, rawGender) : getGenderLabel(e.ac, e.genderWeight, "");
+                      const rawAge = String(e.ageLabel ?? "").trim();
+                      const ageIsText = rawAge && isNaN(parseFloat(rawAge));
+                      const ageLabel = ageIsText ? getAgeLabel(rawAge) : getAgeLabel(e.ageWeight);
                       return (
                         <>
                     <td className="num-col">{i + 1}</td>
