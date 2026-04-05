@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList,
 } from "recharts";
 import { getCasteLabel, getGenderLabel, getAgeLabel } from "../demographics";
-import { ACS, formatAcSelectLabel, sortAcNames } from "../config";
+import { formatAcSelectLabel, sortAcNames } from "../config";
 
 const CASTE_COLORS = {
   Nair:      "#3b82f6",
@@ -410,6 +410,13 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
     return [...new Set(src.map(e => e.faName))].filter(Boolean).sort();
   }, [entries, filterAC]);
 
+  // Only show ACs that actually have data in the sheet
+  const sheetACs = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
+    const acSet = new Set(entries.map(e => String(e.ac || "").trim()).filter(Boolean));
+    return sortAcNames([...acSet]);
+  }, [entries]);
+
   const filtered = useMemo(() => {
     if (!entries) return [];
     return entries.filter(e => {
@@ -571,7 +578,7 @@ export default function Analytics({ entries, loading, selectedAC = "", onSelecte
               if (onSelectedACChange) onSelectedACChange(v);
             }}>
             <option value="">All ACs</option>
-            {sortAcNames(ACS).map(ac => (
+            {sheetACs.map(ac => (
               <option key={ac} value={ac}>{formatAcSelectLabel(ac)}</option>
             ))}
           </select>
